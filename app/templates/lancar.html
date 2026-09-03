@@ -7,9 +7,42 @@
 {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 
 <form method="post" action="/lancar" id="form-pelada">
-  <div class="card" style="padding:16px">
-    <div class="linha-form" style="margin:0">
-      <div><label>Data</label><input type="date" name="data" value="{{ hoje }}" required></div>
+  <div class="card" style="padding:18px">
+    <label>Data</label>
+    <!-- Calendario proprio: o do input[type=date] tambem e do navegador. -->
+    <div class="seletor calendario-campo" data-calendario>
+      <input type="hidden" name="data" value="{{ hoje }}" required>
+      <button type="button" class="gatilho" aria-haspopup="dialog" aria-expanded="false">
+        <svg class="icone" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="1.5" y="3" width="13" height="11.5" rx="2" fill="none"
+                stroke="currentColor" stroke-width="1.4"/>
+          <path d="M1.5 6.5h13M5 1.5v3M11 1.5v3" stroke="currentColor"
+                stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span class="valor" data-data-valor></span>
+        <svg class="seta" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">
+          <path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="menu cal" hidden>
+        <div class="cal-topo">
+          <button type="button" class="cal-nav" data-mes="-1" aria-label="Mês anterior">
+            <svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><path d="M6.5 1 1.5 6l5 5"
+              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round"/></svg>
+          </button>
+          <span class="cal-titulo" data-cal-titulo></span>
+          <button type="button" class="cal-nav" data-mes="1" aria-label="Próximo mês">
+            <svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><path d="M1.5 1l5 5-5 5"
+              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="cal-semana"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+        <div class="cal-dias" data-cal-dias></div>
+        <p class="cal-recado" data-cal-recado hidden></p>
+      </div>
     </div>
   </div>
 
@@ -20,29 +53,58 @@
       {% for lado, padrao in [('a', 'PRETO'), ('b', 'BRANCO')] %}
       <div class="cartao-time">
         <div class="titulo">
-          <b>Time {{ 'A' if lado == 'a' else 'B' }}</b>
+          <b><span class="bola" data-bola="{{ lado }}"></span>Time {{ 'A' if lado == 'a' else 'B' }}</b>
         </div>
-        <select name="cor_{{ lado }}" data-cor-select="{{ lado }}">
-          {% for c in cores %}
-          <option value="{{ c.id }}" data-cor="{{ c.codigo }}" {{ 'selected' if c.nome == padrao }}>{{ c.nome }}</option>
-          {% endfor %}
-        </select>
-        <div class="conta" data-resumo="{{ lado }}">0 <small>escalados</small></div>
-        <button type="button" class="fraco" style="width:100%" data-abrir="{{ lado }}">Editar escalação →</button>
+        <!-- Seletor proprio: o painel que o <select> nativo abre e desenhado
+             pelo sistema operacional e nao aceita estilo nenhum. -->
+        <div class="seletor" data-seletor="{{ lado }}">
+          <input type="hidden" name="cor_{{ lado }}"
+                 value="{% for c in cores %}{{ c.id if c.nome == padrao }}{% endfor %}">
+          <button type="button" class="gatilho" aria-haspopup="listbox" aria-expanded="false"
+                  aria-label="Cor do time {{ 'A' if lado == 'a' else 'B' }}">
+            <span class="bola" data-gatilho-bola></span>
+            <span class="valor" data-gatilho-valor></span>
+            <svg class="seta" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">
+              <path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="menu" role="listbox" hidden>
+            {% for c in cores %}
+            <button type="button" role="option" data-valor="{{ c.id }}"
+                    data-cor="{{ c.codigo }}" data-nome="{{ c.nome }}">
+              <span class="bola" style="background:{{ c.codigo }}"></span>
+              <span class="nome">{{ c.nome }}</span>
+              <svg class="check" width="13" height="10" viewBox="0 0 13 10" aria-hidden="true">
+                <path d="M1 5l4 4 7-8" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="conta" data-resumo="{{ lado }}"><b>0</b> escalados</div>
+        <button type="button" class="fraco" data-abrir="{{ lado }}">Editar escalação →</button>
       </div>
       {% endfor %}
     </div>
 
-    <div class="card" style="padding:16px">
+    <div class="card" style="padding:18px">
       <label>Resultado</label>
-      <select name="vencedor">
-        <option value="A">Venceu o time A</option>
-        <option value="B">Venceu o time B</option>
-        <option value="EMPATE">Empate</option>
-      </select>
+      <div class="segmentado" id="segmentado-resultado">
+        <input type="radio" id="venceu-a" name="vencedor" value="A" checked>
+        <label for="venceu-a">Time A</label>
+        <input type="radio" id="venceu-e" name="vencedor" value="EMPATE">
+        <label for="venceu-e">Empate</label>
+        <input type="radio" id="venceu-b" name="vencedor" value="B">
+        <label for="venceu-b">Time B</label>
+      </div>
     </div>
 
-    <button type="submit">Salvar pelada</button>
+    <div class="linha-salvar">
+      <button type="submit">Salvar pelada</button>
+      <p class="aviso" id="aviso-salvar">Escale os 7 titulares dos dois times para salvar.</p>
+    </div>
   </div>
 
   <!-- Editor de escalação de um time: o campinho com as vagas fixas + reservas. -->
@@ -201,7 +263,8 @@
     const reservasOcupadas = est.reservas.filter(Boolean).length;
     const total = noCampo + reservasOcupadas;
     document.querySelector('[data-resumo="' + lado + '"]').innerHTML =
-      total + " <small>escalado" + (total === 1 ? "" : "s") + " (" + noCampo + "/7 no campo)</small>";
+      "<b>" + total + "</b> escalado" + (total === 1 ? "" : "s") +
+      " · " + noCampo + "/7 em campo";
   }
 
   function sincronizarInputs() {
@@ -223,6 +286,21 @@
     }
     atualizarResumo("a");
     atualizarResumo("b");
+    atualizarTrava();
+  }
+
+  const TITULARES = 7; // as vagas do campo; reservas nao contam
+
+  function emCampo(lado) {
+    return Object.values(estados[lado].campo).filter(Boolean).length;
+  }
+
+  // O resultado pode ser escolhido a qualquer momento - o que nao pode e
+  // SALVAR uma pelada com time pela metade. Entao a trava fica so no botao.
+  function atualizarTrava() {
+    const liberado = emCampo("a") >= TITULARES && emCampo("b") >= TITULARES;
+    document.querySelector('#form-pelada button[type="submit"]').disabled = !liberado;
+    document.getElementById("aviso-salvar").hidden = liberado;
   }
 
   function abrirEditor(lado) {
@@ -279,15 +357,18 @@
   }
 
   function escolherJogador(id) {
-    const est = estados[popupAlvo.lado];
-    if (popupAlvo.tipo === "campo") est.campo[popupAlvo.chave] = id;
-    else est.reservas[popupAlvo.chave] = id;
+    // fecharPopup() zera popupAlvo, entao o lado precisa ser guardado ANTES.
+    const { lado, tipo, chave } = popupAlvo;
+    const est = estados[lado];
+    if (tipo === "campo") est.campo[chave] = id;
+    else est.reservas[chave] = id;
     fecharPopup();
-    renderCampo(popupAlvo.lado);
-    renderReservas(popupAlvo.lado);
+    renderCampo(lado);
+    renderReservas(lado);
+    sincronizarInputs();
 
     // Avanco automatico: abre a proxima vaga vazia direto.
-    const proxima = proximaVagaVazia(popupAlvo.lado);
+    const proxima = proximaVagaVazia(lado);
     if (proxima) {
       const rotulo =
         proxima.tipo === "campo"
@@ -298,12 +379,14 @@
   }
 
   function removerJogador() {
-    const est = estados[popupAlvo.lado];
-    if (popupAlvo.tipo === "campo") est.campo[popupAlvo.chave] = null;
-    else est.reservas[popupAlvo.chave] = null;
+    const { lado, tipo, chave } = popupAlvo;  // guardado antes de fecharPopup()
+    const est = estados[lado];
+    if (tipo === "campo") est.campo[chave] = null;
+    else est.reservas[chave] = null;
     fecharPopup();
-    renderCampo(popupAlvo.lado);
-    renderReservas(popupAlvo.lado);
+    renderCampo(lado);
+    renderReservas(lado);
+    sincronizarInputs();
   }
 
   function fecharPopup() {
@@ -326,13 +409,192 @@
     if (e.target.id === "popup") fecharPopup();
   });
 
-  // Pinta a cor do texto do select conforme a cor escolhida, como ja era feito.
-  function pintar(sel) {
-    sel.style.color = sel.selectedOptions[0].dataset.cor;
+  // ----- seletor de cor proprio -----
+  function fecharMenus(exceto) {
+    document.querySelectorAll(".seletor").forEach((s) => {
+      if (s === exceto) return;
+      s.querySelector(".menu").hidden = true;
+      s.querySelector(".gatilho").setAttribute("aria-expanded", "false");
+      s.classList.remove("aberto");
+    });
   }
-  document.querySelectorAll("[data-cor-select]").forEach((sel) => {
-    pintar(sel);
-    sel.addEventListener("change", () => pintar(sel));
+
+  function refletirCor(lado) {
+    const seletor = document.querySelector('[data-seletor="' + lado + '"]');
+    const valor = seletor.querySelector('input[type="hidden"]').value;
+    const opcao = seletor.querySelector('.menu button[data-valor="' + valor + '"]');
+    if (!opcao) return;
+    seletor.querySelector("[data-gatilho-bola]").style.background = opcao.dataset.cor;
+    seletor.querySelector("[data-gatilho-valor]").textContent = opcao.dataset.nome;
+    seletor.querySelectorAll(".menu button").forEach((b) =>
+      b.classList.toggle("marcado", b === opcao)
+    );
+    // A bolinha ao lado do nome do time.
+    const bola = document.querySelector('[data-bola="' + lado + '"]');
+    if (bola) bola.style.background = opcao.dataset.cor;
+  }
+
+  // Os dois times nao podem usar a mesma cor: a cor de um lado fica bloqueada
+  // na lista do outro, entao o erro nem chega a ser possivel.
+  function impedirCorRepetida() {
+    const escolhida = {};
+    for (const lado of ["a", "b"]) {
+      escolhida[lado] = document
+        .querySelector('[data-seletor="' + lado + '"] input[type="hidden"]').value;
+    }
+    for (const lado of ["a", "b"]) {
+      const doOutro = lado === "a" ? escolhida.b : escolhida.a;
+      document
+        .querySelectorAll('[data-seletor="' + lado + '"] .menu button')
+        .forEach((b) => {
+          const bloqueado = b.dataset.valor === doOutro;
+          b.disabled = bloqueado;
+          b.title = bloqueado ? "Já é a cor do outro time" : "";
+        });
+    }
+  }
+
+  document.querySelectorAll("[data-seletor]").forEach((seletor) => {
+    const gatilho = seletor.querySelector(".gatilho");
+    const menu = seletor.querySelector(".menu");
+    gatilho.addEventListener("click", () => {
+      const abrindo = menu.hidden;
+      fecharMenus(seletor);
+      menu.hidden = !abrindo;
+      gatilho.setAttribute("aria-expanded", String(abrindo));
+      seletor.classList.toggle("aberto", abrindo);
+    });
+    menu.querySelectorAll("button").forEach((op) =>
+      op.addEventListener("click", () => {
+        seletor.querySelector('input[type="hidden"]').value = op.dataset.valor;
+        menu.hidden = true;
+        gatilho.setAttribute("aria-expanded", "false");
+        seletor.classList.remove("aberto");
+        refletirCor(seletor.dataset.seletor);
+        impedirCorRepetida();
+      })
+    );
+  });
+
+  refletirCor("a");
+  refletirCor("b");
+  impedirCorRepetida();
+
+  // ----- calendario proprio -----
+  const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho",
+                 "agosto","setembro","outubro","novembro","dezembro"];
+  const campoData = document.querySelector("[data-calendario]");
+  const entradaData = campoData.querySelector('input[type="hidden"]');
+  const menuCal = campoData.querySelector(".cal");
+  let mesVisivel;
+
+  const soData = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const paraISO = (d) =>
+    d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
+    "-" + String(d.getDate()).padStart(2, "0");
+  const daISO = (s) => { const [a, m, d] = s.split("-").map(Number); return new Date(a, m - 1, d); };
+
+  function mostrarData() {
+    const d = daISO(entradaData.value);
+    campoData.querySelector("[data-data-valor]").textContent =
+      String(d.getDate()).padStart(2, "0") + " de " + MESES[d.getMonth()] + " de " + d.getFullYear();
+  }
+
+  // Recado dentro do proprio calendario, onde o clique aconteceu.
+  function recado(texto) {
+    const p = campoData.querySelector("[data-cal-recado]");
+    p.textContent = texto || "";
+    p.hidden = !texto;
+  }
+
+  function desenharMes() {
+    // Capitaliza so o mes: text-transform:capitalize no CSS deixava "Setembro
+    // De 2026", com o "de" em maiuscula.
+    const mes = MESES[mesVisivel.getMonth()];
+    campoData.querySelector("[data-cal-titulo]").textContent =
+      mes[0].toUpperCase() + mes.slice(1) + " de " + mesVisivel.getFullYear();
+    // Avancar para um mes inteiro de datas futuras nao leva a nada: a seta
+    // desliga quando o mes visivel ja e o mes corrente.
+    const agora = new Date();
+    const noMesAtual =
+      mesVisivel.getFullYear() === agora.getFullYear() &&
+      mesVisivel.getMonth() === agora.getMonth();
+    campoData.querySelector('[data-mes="1"]').disabled = noMesAtual;
+
+    const grade = campoData.querySelector("[data-cal-dias]");
+    grade.innerHTML = "";
+    const primeiro = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth(), 1);
+    const dias = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth() + 1, 0).getDate();
+    const hoje = soData(new Date());
+    const escolhido = daISO(entradaData.value).getTime();
+
+    for (let i = 0; i < primeiro.getDay(); i++) {
+      grade.appendChild(document.createElement("span"));
+    }
+    for (let dia = 1; dia <= dias; dia++) {
+      const data = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth(), dia);
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = dia;
+      b.className = "cal-dia";
+      if (data.getTime() === escolhido) b.classList.add("escolhido");
+      if (data.getTime() === hoje.getTime()) b.classList.add("hoje");
+
+      // Pelada que ainda nao aconteceu nao pode ser lancada. O dia fica
+      // apagado mas continua clicavel de proposito: botao com disabled nao
+      // dispara clique nenhum, e ai nao daria para explicar o motivo.
+      const futuro = data.getTime() > hoje.getTime();
+      if (futuro) {
+        b.classList.add("futuro");
+        b.setAttribute("aria-disabled", "true");
+      }
+
+      b.addEventListener("click", () => {
+        if (futuro) {
+          recado("Essa data ainda não chegou — só dá para lançar pelada que já aconteceu.");
+          return;
+        }
+        recado(null);
+        entradaData.value = paraISO(data);
+        mostrarData();
+        desenharMes();
+        menuCal.hidden = true;
+        campoData.classList.remove("aberto");
+        campoData.querySelector(".gatilho").setAttribute("aria-expanded", "false");
+      });
+      grade.appendChild(b);
+    }
+  }
+
+  campoData.querySelectorAll("[data-mes]").forEach((b) =>
+    b.addEventListener("click", () => {
+      mesVisivel = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth() + Number(b.dataset.mes), 1);
+      desenharMes();
+    })
+  );
+
+  // O gatilho do calendario precisa do proprio handler: ele nao e um
+  // [data-seletor], entao nao entrava no laco que abre os menus de cor.
+  const gatilhoCal = campoData.querySelector(".gatilho");
+  gatilhoCal.addEventListener("click", () => {
+    const abrindo = menuCal.hidden;
+    if (abrindo) recado(null);  // recado antigo nao acompanha a proxima abertura
+    fecharMenus(campoData);
+    menuCal.hidden = !abrindo;
+    gatilhoCal.setAttribute("aria-expanded", String(abrindo));
+    campoData.classList.toggle("aberto", abrindo);
+  });
+
+  mesVisivel = new Date(daISO(entradaData.value).getFullYear(), daISO(entradaData.value).getMonth(), 1);
+  mostrarData();
+  desenharMes();
+
+  // Clique fora fecha qualquer menu aberto.
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".seletor")) fecharMenus(null);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") fecharMenus(null);
   });
 
   document.getElementById("form-pelada").addEventListener("submit", sincronizarInputs);

@@ -6,10 +6,12 @@
 
 <div class="card">
 {% if tabela %}
+<div class="rolavel">
 <table>
   <thead><tr>
     <th class="pos">#</th><th>Jogador</th>
-    <th>J</th><th>V</th><th>E</th><th>D</th><th>Pts</th><th>Aproveitamento</th>
+    <th>J</th><th>V</th><th>E</th><th>D</th><th>Pts</th>
+    <th><span class="longo">Aproveitamento</span><span class="curto">%</span></th>
   </tr></thead>
   <tbody>
   {% for l in tabela %}
@@ -31,6 +33,7 @@
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <div class="vazio">Nenhuma pelada registrada ainda. <a href="/lancar" style="color:var(--acento)">Lançar a primeira</a></div>
 {% endif %}

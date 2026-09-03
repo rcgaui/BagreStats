@@ -5,195 +5,404 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block titulo %}BagreStats{% endblock %}</title>
 <style>
-  :root{--bg:#12151a;--card:#1b1f27;--linha:#262b35;--txt:#e7ebf0;--fraco:#8b95a5;
-        --verde:#2ecc71;--amarelo:#f1c40f;--vermelho:#e74c3c;--acento:#3ba55d}
+  /* Archivo variavel: eixos de peso e largura. Hospedada aqui, nao em CDN,
+     entao funciona offline e nao pisca esperando terceiro. O eixo de largura
+     e o que da voz aos titulos sem precisar de uma segunda familia. */
+  @font-face{
+    font-family:"Archivo";
+    src:url("/static/fontes/archivo.woff2") format("woff2-variations");
+    font-weight:100 900;
+    font-stretch:62% 125%;
+    font-display:swap;
+  }
+
+  :root{
+    --bg:#0A0C10; --card:#13171D; --sobe:#191F27; --linha:#232932;
+    --txt:#EDF1F6; --fraco:#7B8695;
+    --acento:#C9F24D; --acento-txt:#0A0C10; --acento-fundo:#C9F24D1f;
+    --verde:#3FD48A; --amarelo:#F5C64B; --vermelho:#F0736B;
+    --ouro:#F0C24B; --prata:#C4CCD6; --bronze:#D08A54;
+    --raio:12px;
+    /* Anel de toda amostra de cor: sem ele o colete preto some no fundo. */
+    --anel-cor:inset 0 0 0 1px #ffffff59;
+    --fonte:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  html{color-scheme:dark}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);
-       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  header{background:var(--card);border-bottom:1px solid var(--linha);padding:0 16px;
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--fonte);
+       font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
+       font-variant-numeric:tabular-nums}
+
+  ::selection{background:var(--acento);color:var(--acento-txt)}
+  input,select,textarea{caret-color:var(--acento)}
+  :focus-visible{outline:2px solid var(--acento);outline-offset:2px;border-radius:6px}
+
+  /* ---------- cabecalho ---------- */
+  header{background:#0D1015;border-bottom:1px solid var(--linha);padding:0 20px;
          position:sticky;top:0;z-index:10}
-  nav{max-width:900px;margin:0 auto;display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-  nav .marca{font-weight:700;margin-right:16px;padding:14px 0;letter-spacing:-.3px}
-  nav .marca span{color:var(--acento)}
-  nav a{color:var(--fraco);text-decoration:none;padding:14px 12px;font-size:14px;
-        border-bottom:2px solid transparent}
+  nav{max-width:1000px;margin:0 auto;display:flex;gap:2px;align-items:center;
+      overflow-x:auto;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  nav a,nav .marca{white-space:nowrap;flex:none}
+  .marca{font-weight:800;font-stretch:118%;font-size:19px;letter-spacing:-.02em;
+         margin-right:26px;padding:16px 0}
+  .marca span{color:var(--acento)}
+  nav a{color:var(--fraco);text-decoration:none;padding:18px 14px;font-size:14px;
+        font-weight:500;position:relative;transition:color .15s}
   nav a:hover{color:var(--txt)}
-  nav a.ativo{color:var(--txt);border-bottom-color:var(--acento)}
-  main{max-width:900px;margin:0 auto;padding:20px 16px 60px}
-  h1{font-size:20px;margin:0 0 4px}
-  .sub{color:var(--fraco);font-size:13px;margin:0 0 20px}
-  .card{background:var(--card);border:1px solid var(--linha);border-radius:10px;
-        overflow:hidden;margin-bottom:16px}
-  .card h2{font-size:14px;margin:0;padding:14px 16px;border-bottom:1px solid var(--linha);
-           color:var(--fraco);text-transform:uppercase;letter-spacing:.5px}
+  nav a.ativo{color:var(--txt)}
+  nav a.ativo::after{content:"";position:absolute;left:14px;right:14px;bottom:0;
+                     height:2px;background:var(--acento);border-radius:2px 2px 0 0}
+
+  main{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+
+  /* ---------- tipografia ---------- */
+  h1{font-size:30px;font-weight:700;font-stretch:105%;letter-spacing:-.025em;
+     margin:0 0 6px;line-height:1.15}
+  .sub{color:var(--fraco);font-size:14px;margin:0 0 26px;max-width:70ch}
+
+  /* ---------- cartao ---------- */
+  /* overflow AQUI e proibido: qualquer valor diferente de visible transforma o
+     card num recorte, e todo menu suspenso dentro dele (calendario, seletor de
+     cor) aparece cortado. A rolagem de tabela larga mora em .rolavel. */
+  .card{background:var(--card);border:1px solid var(--linha);border-radius:var(--raio);
+        margin-bottom:18px}
+  /* Tabela larga rola DENTRO deste embrulho, sem empurrar a pagina de lado.
+     O recorte aqui e seguro: nao existe menu suspenso dentro de tabela. */
+  .rolavel{overflow-x:auto;border-radius:inherit}
+  /* Sem overflow no card, o fundo do hover da ultima linha passaria por cima
+     do canto arredondado. */
+  .card table tr:last-child td:first-child{border-bottom-left-radius:var(--raio)}
+  .card table tr:last-child td:last-child{border-bottom-right-radius:var(--raio)}
+  .card h2{font-size:11px;margin:0;padding:15px 18px;border-bottom:1px solid var(--linha);
+           color:var(--fraco);text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+
+  /* ---------- tabela ---------- */
   table{width:100%;border-collapse:collapse;font-size:14px}
-  th{text-align:right;color:var(--fraco);font-size:11px;text-transform:uppercase;
-     letter-spacing:.5px;padding:10px 8px;border-bottom:1px solid var(--linha);font-weight:600}
+  th{text-align:right;color:var(--fraco);font-size:10px;text-transform:uppercase;
+     letter-spacing:.09em;padding:12px 10px;border-bottom:1px solid var(--linha);
+     font-weight:600}
   th:nth-child(-n+2),td:nth-child(-n+2){text-align:left}
-  td{padding:11px 8px;border-bottom:1px solid var(--linha);text-align:right}
+  td{padding:12px 10px;border-bottom:1px solid var(--linha);text-align:right}
   tr:last-child td{border-bottom:none}
-  tbody tr:hover{background:#20252e}
+  tbody tr{transition:background .12s}
+  tbody tr:hover{background:var(--sobe)}
   td a{color:var(--txt);text-decoration:none;font-weight:500}
   td a:hover{color:var(--acento)}
-  .pos{color:var(--fraco);width:32px;font-variant-numeric:tabular-nums}
-  .pts{font-weight:700}
-  .barra{display:inline-block;width:52px;height:5px;background:var(--linha);
-         border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:8px}
-  .barra i{display:block;height:100%;background:var(--acento)}
-  .bola{display:inline-block;width:11px;height:11px;border-radius:50%;
-        vertical-align:-1px;margin-right:7px;border:1px solid #0006}
-  .vazio{padding:28px 16px;color:var(--fraco);text-align:center;font-size:14px}
-  form{padding:16px}
-  label{display:block;font-size:12px;color:var(--fraco);margin:0 0 6px;
-        text-transform:uppercase;letter-spacing:.5px}
-  input,select,button{font:inherit;border-radius:7px;border:1px solid var(--linha);
-                      background:#141820;color:var(--txt);padding:9px 11px}
-  input[type=color]{padding:3px;height:38px;width:52px}
-  button{background:var(--acento);border-color:var(--acento);color:#fff;font-weight:600;
-         cursor:pointer;padding:10px 18px}
-  button:hover{filter:brightness(1.1)}
-  button.fraco{background:transparent;border-color:var(--linha);color:var(--fraco)}
-  .linha-form{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
-  .erro{background:#3a1f22;border:1px solid #6b2b31;color:#ffb3b8;padding:11px 14px;
-        border-radius:8px;margin-bottom:16px;font-size:14px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media(max-width:620px){.grid2{grid-template-columns:1fr}}
-  .destaque{display:flex;gap:24px;padding:16px;flex-wrap:wrap}
-  .destaque div{flex:1;min-width:88px}
-  .destaque b{display:block;font-size:26px;font-weight:700;letter-spacing:-1px}
-  .destaque small{color:var(--fraco);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .pos{color:var(--fraco);width:34px;font-weight:600}
+  .pts{font-weight:700;font-size:15px}
+  .pos.m1{color:var(--ouro)}.pos.m2{color:var(--prata)}.pos.m3{color:var(--bronze)}
+  tr.top td{background:linear-gradient(90deg,#1a2016 0%,transparent 60%)}
+  tr.top:hover td{background:linear-gradient(90deg,#202818 0%,var(--sobe) 60%)}
+
+  .barra{display:inline-block;width:56px;height:6px;background:var(--linha);
+         border-radius:99px;overflow:hidden;vertical-align:middle;margin-right:10px}
+  .barra i{display:block;height:100%;background:var(--acento);border-radius:99px}
+  .bola{display:inline-block;width:12px;height:12px;border-radius:50%;
+        vertical-align:-1px;margin-right:8px;box-shadow:var(--anel-cor)}
+  .vazio{padding:34px 18px;color:var(--fraco);text-align:center;font-size:14px}
+
+  /* ---------- formulario ---------- */
+  form{padding:18px}
+  label{display:block;font-size:10px;color:var(--fraco);margin:0 0 8px;
+        text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+  input,select,button,textarea{font:inherit;font-family:var(--fonte);border-radius:9px;
+    border:1px solid var(--linha);background:#0E1116;color:var(--txt);padding:11px 13px;
+    transition:border-color .15s,background .15s,color .15s}
+  input:hover,select:hover{border-color:#313945}
+  /* O <select> nativo e feio e nao aceita estilo por dentro. Tiramos a
+     aparencia padrao e desenhamos a seta como fundo. */
+  select{appearance:none;padding-right:36px;cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5l5-5' stroke='%237B8695' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 13px center}
+  input[type=color]{padding:3px;height:42px;width:56px;cursor:pointer}
+  input[type=date]{cursor:pointer}
+
+  button{background:var(--acento);border-color:var(--acento);color:var(--acento-txt);
+         font-weight:700;cursor:pointer;padding:12px 22px;letter-spacing:-.01em}
+  button:hover{filter:brightness(1.08)}
+  button:active{transform:translateY(1px);filter:brightness(.94)}
+  button:disabled{background:var(--linha);border-color:var(--linha);color:var(--fraco);
+                  cursor:not-allowed;filter:none;transform:none}
+  button.fraco{background:transparent;border-color:var(--linha);color:var(--txt);
+               font-weight:600}
+  button.fraco:hover{border-color:var(--acento);color:var(--acento);filter:none}
+
+  .linha-form{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
+  .erro{background:#2a1518;border:1px solid #6b2b31;color:#ffb3b8;padding:12px 15px;
+        border-radius:9px;margin-bottom:18px;font-size:14px}
+
+  /* ---------- seletor proprio (substitui <select> e input[type=date]) ----------
+     O painel que o <select> nativo abre e desenhado pelo sistema operacional e
+     nao aceita estilo. Por isso o controle inteiro e refeito aqui. */
+  .seletor{position:relative}
+  .seletor .gatilho{display:flex;align-items:center;gap:10px;width:100%;
+    background:#0E1116;border:1px solid var(--linha);border-radius:9px;
+    padding:11px 13px;color:var(--txt);font-weight:500;cursor:pointer;
+    letter-spacing:0;text-align:left}
+  .seletor .gatilho:hover{border-color:#313945;filter:none;transform:none}
+  .seletor .gatilho:active{transform:none}
+  .seletor.aberto .gatilho{border-color:var(--acento)}
+  .seletor .gatilho .valor{flex:1}
+  .seletor .gatilho .seta{color:var(--fraco);flex:none;transition:transform .18s}
+  .seletor.aberto .gatilho .seta{transform:rotate(180deg)}
+  .seletor .gatilho .icone{color:var(--fraco);flex:none}
+
+  .seletor .menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;
+    background:var(--sobe);border:1px solid #2e3641;border-radius:11px;padding:5px;
+    box-shadow:0 14px 34px -8px #000000cc,0 3px 10px -3px #0009;
+    max-height:270px;overflow-y:auto}
+  .seletor .menu[hidden]{display:none}
+  /* Restrito ao [role=listbox]: sem isso a regra vaza para os botoes do
+     calendario, e por ter seletor de elemento ela VENCE as regras .cal-*
+     (as setas herdavam width:100% e o dia escolhido herdava background:none). */
+  .seletor .menu[role="listbox"] button{display:flex;align-items:center;gap:10px;
+    width:100%;background:none;border:none;border-radius:7px;padding:9px 10px;
+    color:var(--txt);font-weight:500;cursor:pointer;text-align:left;letter-spacing:0}
+  .seletor .menu[role="listbox"] button:hover:not(:disabled){background:#232b36;
+    filter:none;transform:none}
+  .seletor .menu[role="listbox"] button:active{transform:none}
+  .seletor .menu[role="listbox"] button .nome{flex:1}
+  .seletor .menu[role="listbox"] button .check{color:var(--acento);opacity:0;flex:none}
+  .seletor .menu[role="listbox"] button.marcado .check{opacity:1}
+  .seletor .menu[role="listbox"] button:disabled{background:none;border:none;
+    color:#4d5563;cursor:not-allowed;text-decoration:line-through}
+  .seletor .menu[role="listbox"] button:disabled .bola{opacity:.35}
+
+  /* ---------- calendario ----------
+     Tamanho fixo, sem rolagem: o mes inteiro sempre cabe. Precisa anular o
+     max-height e a largura que o menu de cor define. */
+  .calendario-campo .menu{left:0;right:auto;width:284px;max-height:none;
+                          overflow:visible;padding:11px}
+  .cal-topo{display:flex;align-items:center;justify-content:space-between;
+            gap:6px;margin-bottom:9px}
+  .cal-titulo{font-size:13.5px;font-weight:700;white-space:nowrap;letter-spacing:-.01em}
+  .cal-nav{background:none;border:1px solid var(--linha);color:var(--fraco);
+           cursor:pointer;width:26px;height:26px;padding:0;border-radius:7px;
+           display:grid;place-items:center;flex:none}
+  .cal-nav:hover{background:#232b36;color:var(--txt);border-color:#313945;
+                 filter:none;transform:none}
+  .cal-nav:active{transform:none}
+  .cal-nav svg{width:7px;height:10px}
+  .cal-semana,.cal-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .cal-semana span{text-align:center;font-size:9.5px;color:var(--fraco);font-weight:700;
+                   padding:0 0 5px;letter-spacing:.05em}
+  .cal-dia{background:none;border:none;color:var(--txt);border-radius:8px;padding:0;
+           height:33px;font-size:13px;font-weight:500;cursor:pointer;letter-spacing:0;
+           transition:background .12s,color .12s}
+  .cal-dia:hover{background:#2b3440;filter:none;transform:none}
+  .cal-dia:active{transform:none}
+  /* Hoje: so um contorno discreto - quem manda no destaque e a data escolhida. */
+  .cal-dia.hoje{box-shadow:inset 0 0 0 1px #39414f}
+  /* A data escolhida tem que ser inconfundivel, inclusive depois de reabrir o
+     calendario num outro mes e voltar. */
+  .cal-dia.escolhido{background:var(--acento);color:var(--acento-txt);font-weight:800;
+                     box-shadow:0 0 0 3px var(--acento-fundo)}
+  .cal-dia.escolhido:hover{background:var(--acento);color:var(--acento-txt)}
+  /* Data que ainda nao chegou: apagada, mas continua clicavel para poder
+     explicar o motivo em vez de so nao responder. */
+  .cal-dia.futuro{color:#4a5261;cursor:not-allowed}
+  .cal-dia.futuro:hover{background:#1d232c}
+  .cal-nav:disabled{opacity:.3;cursor:not-allowed;background:none}
+  .cal-recado{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--linha);
+              font-size:12px;line-height:1.4;color:var(--amarelo)}
+
+  .linha-salvar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .linha-salvar .aviso{margin:0}
+
+  /* ---------- controle segmentado (substitui o select de resultado) ---------- */
+  .segmentado{display:flex;background:#0E1116;border:1px solid var(--linha);
+              border-radius:10px;padding:4px;gap:4px}
+  .segmentado input{position:absolute;opacity:0;pointer-events:none}
+  .segmentado label{flex:1;margin:0;padding:10px 12px;text-align:center;cursor:pointer;
+                    border-radius:7px;font-size:13px;font-weight:600;color:var(--fraco);
+                    text-transform:none;letter-spacing:0;transition:background .15s,color .15s}
+  .segmentado label:hover{color:var(--txt);background:var(--sobe)}
+  .segmentado input:checked + label{background:var(--acento);color:var(--acento-txt)}
+  .segmentado input:focus-visible + label{outline:2px solid var(--acento);outline-offset:2px}
+  /* Travado ate os dois times estarem escalados: escolher vencedor antes disso
+     e uma resposta sem pergunta. */
+  .segmentado.travado{opacity:.45}
+  .segmentado.travado label{cursor:not-allowed}
+  .segmentado.travado label:hover{background:none;color:var(--fraco)}
+  .segmentado.travado input:checked + label{background:var(--linha);color:var(--fraco)}
+  .aviso{margin:11px 0 0;font-size:12.5px;color:var(--fraco);display:flex;
+         align-items:center;gap:7px}
+  .aviso::before{content:"";width:5px;height:5px;border-radius:50%;flex:none;
+                 background:var(--amarelo)}
+
+  /* ---------- blocos de destaque ---------- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .destaque{display:flex;gap:30px;padding:20px;flex-wrap:wrap}
+  .destaque div{flex:1;min-width:92px}
+  .destaque b{display:block;font-size:32px;font-weight:800;font-stretch:105%;
+              letter-spacing:-.03em;line-height:1.05}
+  .destaque small{color:var(--fraco);font-size:10px;text-transform:uppercase;
+                  letter-spacing:.09em;font-weight:600}
   .V{color:var(--verde)}.E{color:var(--amarelo)}.D{color:var(--vermelho)}
-  .selo{display:inline-block;width:19px;height:19px;line-height:19px;text-align:center;
-        border-radius:4px;font-size:11px;font-weight:700;margin-right:3px}
-  .selo.V{background:#1e4d33;color:#5fd68f}
-  .selo.E{background:#4d431e;color:#e8c95f}
-  .selo.D{background:#4d2222;color:#f08a80}
-  /* --- avatar: circulo com as iniciais, cor derivada do proprio apelido --- */
-  .quem{display:flex;align-items:center;gap:10px}
-  .av{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;
-      font-size:11px;font-weight:700;color:#0d0f13;letter-spacing:-.2px}
-  .av.g{width:56px;height:56px;font-size:20px}
-  /* --- podio: as tres primeiras posicoes --- */
-  .pos.m1{color:#f5c451;font-weight:700}
-  .pos.m2{color:#c9d1d9;font-weight:700}
-  .pos.m3{color:#cd8b52;font-weight:700}
-  tr.top td{background:linear-gradient(90deg,#1f2630 0%,transparent 55%)}
-  /* --- graficos --- */
-  .gr{padding:16px}
+  .selo{display:inline-block;width:21px;height:21px;line-height:21px;text-align:center;
+        border-radius:5px;font-size:11px;font-weight:700}
+  .selo.V{background:#153a29;color:#5fe0a0}
+  .selo.E{background:#3d3316;color:#f0cf6a}
+  .selo.D{background:#3d1e1e;color:#f59a94}
+
+  /* ---------- avatar ---------- */
+  .quem{display:flex;align-items:center;gap:11px}
+  .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;
+      font-size:11px;font-weight:800;color:#0A0C10;letter-spacing:-.02em}
+  .av.g{width:62px;height:62px;font-size:22px}
+
+  /* ---------- graficos ---------- */
+  .gr{padding:20px}
   .gr svg{display:block;width:100%;height:auto;overflow:visible}
   .gr .grade{stroke:var(--linha);stroke-width:1}
   .gr .curva{fill:none;stroke:var(--acento);stroke-width:2.5;
              stroke-linejoin:round;stroke-linecap:round}
-  .gr .sombra{fill:var(--acento);opacity:.12}
+  .gr .sombra{fill:var(--acento);opacity:.13}
   .gr .no{fill:var(--card);stroke:var(--acento);stroke-width:2.5}
-  .gr .marca-y{fill:var(--fraco);font-size:10px}
-  .gr .marca-x{fill:var(--fraco);font-size:10px;text-anchor:middle}
-  /* --- barra empilhada V/E/D --- */
-  .pilha{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--linha)}
+  .gr .marca-y,.gr .marca-x{fill:var(--fraco);font-size:10px;font-family:var(--fonte)}
+  .gr .marca-x{text-anchor:middle}
+
+  /* ---------- barras empilhadas ---------- */
+  .pilha{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--linha)}
   .pilha i{display:block}
   .pilha .v{background:var(--verde)} .pilha .e{background:var(--amarelo)}
   .pilha .d{background:var(--vermelho)}
-  /* Na barra de confronto quem pinta e a cor do colete, nao o julgamento de
-     bom/ruim: ali nao existe lado certo. O contorno interno impede que uma
-     cor escura como o preto suma no fundo escuro. */
-  .pilha.coletes i{box-shadow:inset 0 0 0 1px #ffffff26}
-  .legenda .colete::before{background:var(--c)}
-  .legenda{display:flex;gap:16px;margin-top:11px;font-size:12px;color:var(--fraco);flex-wrap:wrap}
-  .legenda b{color:var(--txt);font-weight:600}
-  .legenda span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;
-                        margin-right:6px;vertical-align:0}
+  /* Colete preto sobre card escuro e quase a mesma cor: a barra lia como linha
+     vazia. Emoldurar num trilho claro faz cada segmento virar bloco. */
+  .pilha.coletes{height:24px;border-radius:8px;background:#4a5364;padding:2px;gap:2px}
+  .pilha.coletes i{border-radius:5px;box-shadow:inset 0 0 0 1px #ffffff2e}
+  .legenda{display:flex;gap:18px;margin-top:13px;font-size:12px;color:var(--fraco);
+           flex-wrap:wrap}
+  .legenda b{color:var(--txt);font-weight:700}
+  .legenda span::before{content:"";display:inline-block;width:9px;height:9px;
+                        border-radius:3px;margin-right:7px;vertical-align:0}
   .legenda .v::before{background:var(--verde)}
   .legenda .e::before{background:var(--amarelo)}
   .legenda .d::before{background:var(--vermelho)}
-  /* --- confronto: barra com as duas cores --- */
-  .duelo{padding:14px 16px;border-bottom:1px solid var(--linha)}
-  .duelo:last-child{border-bottom:none}
+  .legenda .colete::before{background:var(--c);box-shadow:var(--anel-cor)}
+
+  /* ---------- confronto ---------- */
+  .duelo{padding:18px}
+  .duelo + .duelo{border-top:1px solid var(--linha)}
   .duelo .topo{display:flex;justify-content:space-between;align-items:center;
-               margin-bottom:9px;font-size:14px}
-  .duelo .placar{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.5px}
-  .duelo .conta{color:var(--fraco);font-size:12px;font-weight:400}
+               margin-bottom:11px;font-size:14px;font-weight:500}
+  .duelo .placar{font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .duelo .conta{color:var(--fraco);font-size:12px;font-weight:500}
 
-  /* --- lancar pelada: os dois cartoes de resumo (Q3: um time por vez) --- */
-  .resumo-times{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
-  @media(max-width:560px){.resumo-times{grid-template-columns:1fr}}
-  .cartao-time{border:1px solid var(--linha);border-radius:9px;background:#171b23;
-               padding:14px;text-align:left;cursor:pointer;color:var(--txt);width:100%;
-               display:flex;flex-direction:column;gap:8px;font:inherit}
-  .cartao-time:hover{border-color:var(--acento)}
-  .cartao-time .titulo{display:flex;align-items:center;justify-content:space-between;
-                        font-size:13px;color:var(--fraco)}
-  .cartao-time .titulo b{color:var(--txt);display:flex;align-items:center;gap:7px}
-  .cartao-time .conta{font-size:22px;font-weight:700}
-  .cartao-time .conta small{font-size:12px;color:var(--fraco);font-weight:400}
-  .cartao-time select{width:100%}
+  /* ---------- lancar pelada ---------- */
+  .resumo-times{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+  .cartao-time{border:1px solid var(--linha);border-radius:var(--raio);background:var(--card);
+               padding:18px;display:flex;flex-direction:column;gap:14px;
+               transition:border-color .15s}
+  .cartao-time:hover{border-color:#313945}
+  .cartao-time .titulo{display:flex;align-items:center;justify-content:space-between}
+  .cartao-time .titulo b{color:var(--txt);display:flex;align-items:center;gap:9px;
+                         font-size:15px;font-weight:700}
+  .cartao-time .conta{font-size:15px;color:var(--fraco);font-weight:500}
+  .cartao-time .conta b{color:var(--txt);font-size:26px;font-weight:800;
+                        letter-spacing:-.03em;margin-right:5px}
 
-  /* --- editor de escalacao: o campinho --- */
-  .editor-time{border:1px solid var(--linha);border-radius:10px;background:var(--card);
-               padding:16px;margin-bottom:16px}
+  /* ---------- editor de escalacao ---------- */
+  .editor-time{border:1px solid var(--linha);border-radius:var(--raio);background:var(--card);
+               padding:20px;margin-bottom:18px}
   .editor-time .topo-editor{display:flex;align-items:center;justify-content:space-between;
-                             margin-bottom:14px}
-  .editor-time .topo-editor h2{margin:0;padding:0;border:none;font-size:15px;
-                                text-transform:none;letter-spacing:0;color:var(--txt)}
-  .campo{position:relative;width:100%;max-width:340px;margin:0 auto;aspect-ratio:3/4;
-         background:linear-gradient(#2a7a3f,#256b38);border:2px solid #ffffff40;
-         border-radius:10px;overflow:hidden}
+                             margin-bottom:18px;gap:12px}
+  .editor-time .topo-editor h2{margin:0;padding:0;border:none;font-size:17px;
+                                text-transform:none;letter-spacing:-.02em;color:var(--txt);
+                                font-weight:700;display:flex;align-items:center;gap:9px}
+  .campo{position:relative;width:100%;max-width:360px;margin:0 auto;aspect-ratio:3/4;
+         background:radial-gradient(120% 90% at 50% 0%,#2f7f45 0%,#1f5f33 100%);
+         border:2px solid #ffffff33;border-radius:10px;overflow:hidden}
   .campo::before{content:"";position:absolute;inset:0;
-                 background:repeating-linear-gradient(0deg,#ffffff0d 0 12%,transparent 12% 24%)}
-  .campo::after{content:"";position:absolute;left:50%;top:0;width:34%;height:11%;
-                border:2px solid #ffffff55;border-top:none;transform:translateX(-50%);
-                border-radius:0 0 6px 6px}
+                 background:repeating-linear-gradient(0deg,#ffffff0f 0 12.5%,transparent 12.5% 25%)}
+  .campo::after{content:"";position:absolute;left:50%;top:0;width:36%;height:12%;
+                border:2px solid #ffffff59;border-top:none;transform:translateX(-50%);
+                border-radius:0 0 7px 7px}
   .vaga{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;
-        align-items:center;gap:3px;background:none;border:none;padding:0;cursor:pointer;
-        font:inherit;color:inherit}
-  .vaga .bolha{width:44px;height:44px;border-radius:50%;background:#ffffff26;
-               border:2px dashed #ffffff70;display:grid;place-items:center;
-               font-size:18px;color:#fff;transition:background .15s}
-  .vaga .bolha:hover{background:#ffffff3d}
-  .vaga.ocupada .bolha{background:var(--card);border-style:solid;border-color:#fff}
-  .vaga .rotulo{font-size:10px;color:#ffffffcc;text-shadow:0 1px 2px #000a;
-                white-space:nowrap;max-width:70px;overflow:hidden;text-overflow:ellipsis}
-  .reservas{margin-top:16px}
-  .reservas .rotulo-secao{font-size:11px;color:var(--fraco);text-transform:uppercase;
-                          letter-spacing:.5px;margin-bottom:9px}
-  .lista-reservas{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+        align-items:center;gap:5px;background:none;border:none;padding:0;cursor:pointer;
+        font:inherit;font-family:var(--fonte);color:inherit}
+  .vaga .bolha{width:46px;height:46px;border-radius:50%;background:#0a0c1080;
+               border:2px dashed #ffffff8c;display:grid;place-items:center;
+               font-size:18px;font-weight:700;color:#fff;
+               transition:background .15s,border-color .15s,transform .12s}
+  .vaga:hover .bolha{background:#0a0c10b3;border-color:var(--acento);transform:scale(1.06)}
+  .vaga.ocupada .bolha{background:var(--acento);border-style:solid;border-color:var(--acento);
+                       color:var(--acento-txt);font-size:14px;font-weight:800}
+  .vaga .rotulo{font-size:11px;font-weight:600;color:#ffffffe0;text-shadow:0 1px 3px #000c;
+                white-space:nowrap;max-width:76px;overflow:hidden;text-overflow:ellipsis}
+  .reservas{margin-top:22px}
+  .reservas .rotulo-secao{font-size:10px;color:var(--fraco);text-transform:uppercase;
+                          letter-spacing:.09em;margin-bottom:12px;font-weight:600}
+  .lista-reservas{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
   .lista-reservas .vaga{position:static;transform:none}
-  .lista-reservas .vaga .bolha{background:#ffffff14;border-color:var(--linha)}
-  .lista-reservas .vaga.ocupada .bolha{background:#20252e;border-color:var(--acento);
-                                        border-style:solid}
+  .lista-reservas .vaga .bolha{background:#0E1116;border-color:var(--linha);
+                               border-style:solid;color:var(--fraco)}
+  .lista-reservas .vaga:hover .bolha{border-color:var(--acento);color:var(--acento)}
+  .lista-reservas .vaga.ocupada .bolha{background:var(--acento);border-color:var(--acento);
+                                        color:var(--acento-txt)}
   .lista-reservas .vaga .rotulo{color:var(--fraco);text-shadow:none}
-  .add-reserva .bolha{border-style:solid;border-color:var(--linha);color:var(--fraco)}
-  .add-reserva:hover .bolha{border-color:var(--acento);color:var(--acento)}
 
-  /* --- popup de escolha de jogador --- */
-  .popup-fundo{position:fixed;inset:0;background:#000a;display:flex;
-              align-items:flex-end;justify-content:center;z-index:100;padding:0}
-  /* CSS de autor sempre vence o atributo [hidden] do navegador quando a
-     mesma regra ja define display - por isso precisa deste override
-     explicito, senao o popup nasce visivel mesmo com hidden no HTML. */
+  /* ---------- popup ---------- */
+  .popup-fundo{position:fixed;inset:0;background:#000000b8;display:flex;
+              align-items:flex-end;justify-content:center;z-index:100;
+              backdrop-filter:blur(3px)}
+  /* CSS de autor vence o atributo [hidden] quando a regra define display:
+     sem este override o popup nasce visivel. */
   .popup-fundo[hidden]{display:none}
   @media(min-width:560px){.popup-fundo{align-items:center}}
-  .popup-caixa{background:var(--card);width:100%;max-width:380px;max-height:74vh;
-              border-radius:14px 14px 0 0;display:flex;flex-direction:column;overflow:hidden}
-  @media(min-width:560px){.popup-caixa{border-radius:12px;max-height:70vh}}
-  .popup-caixa .cabeca{padding:14px 16px;border-bottom:1px solid var(--linha)}
+  .popup-caixa{background:var(--card);width:100%;max-width:400px;max-height:74vh;
+              border:1px solid var(--linha);border-bottom:none;
+              border-radius:16px 16px 0 0;display:flex;flex-direction:column;
+              overflow:hidden}
+  @media(min-width:560px){.popup-caixa{border-radius:14px;max-height:70vh;border-bottom:1px solid var(--linha)}}
+  .popup-caixa .cabeca{padding:16px 18px;border-bottom:1px solid var(--linha)}
   .popup-caixa .cabeca-linha{display:flex;justify-content:space-between;align-items:center;
-                              margin-bottom:10px}
-  .popup-caixa h3{margin:0;font-size:14px;color:var(--fraco);text-transform:uppercase;
-                  letter-spacing:.5px}
-  .popup-caixa .fechar{background:none;border:none;color:var(--fraco);font-size:20px;
+                              margin-bottom:12px}
+  .popup-caixa h3{margin:0;font-size:11px;color:var(--fraco);text-transform:uppercase;
+                  letter-spacing:.09em;font-weight:600}
+  .popup-caixa .fechar{background:none;border:none;color:var(--fraco);font-size:22px;
                        cursor:pointer;padding:0;line-height:1}
-  .popup-caixa input[type=search]{width:100%}
+  .popup-caixa .fechar:hover{color:var(--txt);filter:none;transform:none}
+  .popup-caixa input[type=search]{width:100%;font-size:16px}
   .popup-lista{overflow-y:auto;flex:1}
-  .popup-lista button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-                      padding:11px 16px;background:none;border:none;border-top:1px solid var(--linha);
-                      color:var(--txt);font:inherit;cursor:pointer}
-  .popup-lista button:hover{background:#20252e}
-  .popup-lista .vazio{padding:20px 16px;color:var(--fraco);font-size:13px}
-  .remover-jogador{margin:0;padding:11px 16px;background:none;border:none;
-                   border-top:1px solid var(--linha);color:var(--vermelho);font:inherit;
-                   text-align:left;cursor:pointer;width:100%}
-  .remover-jogador:hover{background:#20252e}
+  .popup-lista button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+                      padding:12px 18px;background:none;border:none;
+                      border-bottom:1px solid var(--linha);color:var(--txt);font:inherit;
+                      font-family:var(--fonte);font-weight:500;cursor:pointer;
+                      border-radius:0;letter-spacing:0}
+  .popup-lista button:hover{background:var(--sobe);filter:none;transform:none}
+  .popup-lista button:active{transform:none}
+  .popup-lista .vazio{padding:24px 18px;color:var(--fraco);font-size:13px}
+  .remover-jogador{margin:0;padding:12px 18px;background:none;border:none;
+                   border-bottom:1px solid var(--linha);color:var(--vermelho);font:inherit;
+                   font-family:var(--fonte);font-weight:600;text-align:left;cursor:pointer;
+                   width:100%;border-radius:0}
+  .remover-jogador:hover{background:var(--sobe);filter:none;transform:none}
+  .remover-jogador:active{transform:none}
 
+  /* Rotulo longo/curto: "APROVEITAMENTO" impunha largura minima a coluna e
+     empurrava a tabela para fora do celular. */
+  .curto{display:none}
+
+  /* ---------- telas estreitas ---------- */
+  @media(max-width:720px){
+    .grid2,.resumo-times{grid-template-columns:1fr}
+  }
+  @media(max-width:560px){
+    main{padding:22px 14px 56px}
+    h1{font-size:24px}
+    .barra{display:none}
+    /* O avatar e decoracao numa tabela densa: o apelido ao lado ja identifica
+       o jogador, e sem ele Pts e Aproveitamento cabem na tela. */
+    table .av{display:none}
+    td,th{padding:11px 5px}
+    .pos{width:22px}
+    .longo{display:none}
+    .curto{display:inline}
+    /* Esmaece a borda direita das abas: e a pista de que ha mais para o lado. */
+    nav{mask-image:linear-gradient(90deg,#000 90%,transparent)}
+  }
 </style>
 </head>
 <body>
