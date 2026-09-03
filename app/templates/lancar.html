@@ -2,68 +2,342 @@
 {% block titulo %}Lançar pelada · BagreStats{% endblock %}
 {% block conteudo %}
 <h1>Lançar pelada</h1>
-<p class="sub">Marque quem jogou de cada lado. Quem não for marcado, não jogou.</p>
+<p class="sub">Escolha a cor de cada time e clique para escalar quem jogou.</p>
 
 {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 
-<form method="post" action="/lancar" class="card">
-  <div class="linha-form">
-    <div><label>Data</label><input type="date" name="data" value="{{ hoje }}" required></div>
-    <div><label>Resultado</label>
-      <select name="vencedor">
-        <option value="A">Venceu o time 1</option>
-        <option value="B">Venceu o time 2</option>
-        <option value="EMPATE">Empate</option>
-      </select>
+<form method="post" action="/lancar" id="form-pelada">
+  <div class="card" style="padding:16px">
+    <div class="linha-form" style="margin:0">
+      <div><label>Data</label><input type="date" name="data" value="{{ hoje }}" required></div>
     </div>
   </div>
 
-  <div class="times">
-    {% for lado, padrao in [('a', 'PRETO'), ('b', 'BRANCO')] %}
-    <div class="time">
-      <h3>
-        <select name="cor_{{ lado }}" onchange="pintar(this)">
+  <!-- Tudo daqui pra baixo, ate o botao de salvar, some enquanto um time esta
+       sendo escalado (Q3: um time por vez, o editor toma o lugar disto). -->
+  <div id="tela-resumo">
+    <div class="resumo-times">
+      {% for lado, padrao in [('a', 'PRETO'), ('b', 'BRANCO')] %}
+      <div class="cartao-time">
+        <div class="titulo">
+          <b>Time {{ 'A' if lado == 'a' else 'B' }}</b>
+        </div>
+        <select name="cor_{{ lado }}" data-cor-select="{{ lado }}">
           {% for c in cores %}
           <option value="{{ c.id }}" data-cor="{{ c.codigo }}" {{ 'selected' if c.nome == padrao }}>{{ c.nome }}</option>
           {% endfor %}
         </select>
-        <span class="conta" id="conta-{{ lado }}">0</span>
-      </h3>
-      <div class="escala">
-        {% for j in jogadores %}
-        <label><input type="checkbox" name="time_{{ lado }}" value="{{ j.id }}"
-                      data-lado="{{ lado }}" data-jogador="{{ j.id }}">{{ j.apelido }}</label>
-        {% endfor %}
+        <div class="conta" data-resumo="{{ lado }}">0 <small>escalados</small></div>
+        <button type="button" class="fraco" style="width:100%" data-abrir="{{ lado }}">Editar escalação →</button>
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
+
+    <div class="card" style="padding:16px">
+      <label>Resultado</label>
+      <select name="vencedor">
+        <option value="A">Venceu o time A</option>
+        <option value="B">Venceu o time B</option>
+        <option value="EMPATE">Empate</option>
+      </select>
+    </div>
+
+    <button type="submit">Salvar pelada</button>
   </div>
 
-  <div style="margin-top:16px"><button type="submit">Salvar pelada</button></div>
+  <!-- Editor de escalação de um time: o campinho com as vagas fixas + reservas. -->
+  {% for lado in ['a', 'b'] %}
+  <div class="editor-time" id="editor-{{ lado }}" hidden>
+    <div class="topo-editor">
+      <h2>Escalação — Time {{ 'A' if lado == 'a' else 'B' }}</h2>
+      <button type="button" class="fraco" data-voltar>← Voltar</button>
+    </div>
+    <div class="campo" id="campo-{{ lado }}"></div>
+    <div class="reservas">
+      <div class="rotulo-secao">Reservas</div>
+      <div class="lista-reservas" id="reservas-{{ lado }}"></div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div id="campos-a"></div>
+  <div id="campos-b"></div>
 </form>
 
+<!-- Popup de escolha de jogador para uma vaga -->
+<div class="popup-fundo" id="popup" hidden>
+  <div class="popup-caixa">
+    <div class="cabeca">
+      <div class="cabeca-linha">
+        <h3 id="popup-titulo">Vaga</h3>
+        <button type="button" class="fechar" id="popup-fechar" aria-label="Fechar">×</button>
+      </div>
+      <input type="search" id="popup-busca" placeholder="Buscar jogador..." style="font-size:16px">
+    </div>
+    <button type="button" class="remover-jogador" id="popup-remover" hidden>Remover desta vaga</button>
+    <div class="popup-lista" id="popup-lista"></div>
+  </div>
+</div>
+
+<script id="dados-jogadores" type="application/json">{{ jogadores_json|safe }}</script>
 <script>
-// Marcar alguem de um lado desmarca do outro: impossivel escalar nos dois times.
-// O banco tambem recusa, mas aqui o erro nem chega a acontecer.
-document.querySelectorAll('.escala input').forEach(function (caixa) {
-  caixa.addEventListener('change', function () {
-    if (caixa.checked) {
-      document.querySelectorAll(
-        '.escala input[data-jogador="' + caixa.dataset.jogador + '"]'
-      ).forEach(function (outra) { if (outra !== caixa) outra.checked = false; });
+(function () {
+  "use strict";
+  const jogadores = JSON.parse(document.getElementById("dados-jogadores").textContent);
+
+  // Formacao fixa (Q4). Ordem = ordem de preenchimento automatico.
+  const POSICOES = [
+    ["GOL", "Goleiro"], ["ZAG", "Zagueiro"],
+    ["LAT_E", "Lateral esq."], ["LAT_D", "Lateral dir."],
+    ["MEI_E", "Meio esq."], ["MEI_D", "Meio dir."],
+    ["ATA", "Atacante"],
+  ];
+  // Coordenadas no campinho, em % (so visual, o backend nao sabe disso).
+  const COORD = {
+    ATA: [50, 14], MEI_E: [28, 36], MEI_D: [72, 36],
+    LAT_E: [16, 58], LAT_D: [84, 58], ZAG: [50, 76], GOL: [50, 92],
+  };
+
+  const estados = {
+    a: { campo: {}, reservas: [null, null] },
+    b: { campo: {}, reservas: [null, null] },
+  };
+  for (const lado of ["a", "b"]) {
+    for (const [codigo] of POSICOES) estados[lado].campo[codigo] = null;
+  }
+
+  let popupAlvo = null; // { lado, tipo: 'campo'|'reserva', chave }
+
+  function idsOcupados(excluir) {
+    const ids = new Set();
+    for (const lado of ["a", "b"]) {
+      const est = estados[lado];
+      for (const [codigo] of POSICOES) {
+        const val = est.campo[codigo];
+        const eEsse = excluir && excluir.lado === lado && excluir.tipo === "campo" && excluir.chave === codigo;
+        if (val && !eEsse) ids.add(val);
+      }
+      est.reservas.forEach((val, i) => {
+        const eEsse = excluir && excluir.lado === lado && excluir.tipo === "reserva" && excluir.chave === i;
+        if (val && !eEsse) ids.add(val);
+      });
     }
-    contar();
+    return ids;
+  }
+
+  function nomeDe(id) {
+    const j = jogadores.find((j) => j.id === id);
+    return j ? j.apelido : "?";
+  }
+
+  function proximaVagaVazia(lado) {
+    const est = estados[lado];
+    for (const [codigo] of POSICOES) {
+      if (!est.campo[codigo]) return { lado, tipo: "campo", chave: codigo };
+    }
+    for (let i = 0; i < est.reservas.length; i++) {
+      if (!est.reservas[i]) return { lado, tipo: "reserva", chave: i };
+    }
+    return null;
+  }
+
+  function renderCampo(lado) {
+    const container = document.getElementById("campo-" + lado);
+    container.innerHTML = "";
+    for (const [codigo, rotulo] of POSICOES) {
+      const [x, y] = COORD[codigo];
+      const id = estados[lado].campo[codigo];
+      const ocupada = !!id;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "vaga" + (ocupada ? " ocupada" : "");
+      btn.style.left = x + "%";
+      btn.style.top = y + "%";
+      btn.setAttribute(
+        "aria-label",
+        rotulo + (ocupada ? ": " + nomeDe(id) : ": vazia, clique para escalar")
+      );
+      btn.innerHTML =
+        '<span class="bolha">' + (ocupada ? nomeDe(id).slice(0, 2).toUpperCase() : "+") + "</span>" +
+        '<span class="rotulo">' + (ocupada ? nomeDe(id) : rotulo) + "</span>";
+      btn.addEventListener("click", () => abrirPopup({ lado, tipo: "campo", chave: codigo }, rotulo));
+      container.appendChild(btn);
+    }
+  }
+
+  function renderReservas(lado) {
+    const container = document.getElementById("reservas-" + lado);
+    container.innerHTML = "";
+    estados[lado].reservas.forEach((id, i) => {
+      const ocupada = !!id;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "vaga" + (ocupada ? " ocupada" : "");
+      btn.setAttribute(
+        "aria-label",
+        "Reserva " + (i + 1) + (ocupada ? ": " + nomeDe(id) : ": vazia, clique para escalar")
+      );
+      btn.innerHTML =
+        '<span class="bolha">' + (ocupada ? nomeDe(id).slice(0, 2).toUpperCase() : "+") + "</span>" +
+        '<span class="rotulo">' + (ocupada ? nomeDe(id) : "Reserva") + "</span>";
+      btn.addEventListener("click", () => abrirPopup({ lado, tipo: "reserva", chave: i }, "Reserva " + (i + 1)));
+      container.appendChild(btn);
+    });
+    const mais = document.createElement("button");
+    mais.type = "button";
+    mais.className = "vaga add-reserva";
+    mais.setAttribute("aria-label", "Adicionar mais uma vaga de reserva");
+    mais.innerHTML = '<span class="bolha">+</span><span class="rotulo">Adicionar</span>';
+    mais.addEventListener("click", () => {
+      estados[lado].reservas.push(null);
+      renderReservas(lado);
+    });
+    container.appendChild(mais);
+  }
+
+  function atualizarResumo(lado) {
+    const est = estados[lado];
+    const noCampo = Object.values(est.campo).filter(Boolean).length;
+    const reservasOcupadas = est.reservas.filter(Boolean).length;
+    const total = noCampo + reservasOcupadas;
+    document.querySelector('[data-resumo="' + lado + '"]').innerHTML =
+      total + " <small>escalado" + (total === 1 ? "" : "s") + " (" + noCampo + "/7 no campo)</small>";
+  }
+
+  function sincronizarInputs() {
+    for (const lado of ["a", "b"]) {
+      const container = document.getElementById("campos-" + lado);
+      const pares = [];
+      for (const [codigo] of POSICOES) {
+        const id = estados[lado].campo[codigo];
+        if (id) pares.push([id, codigo]);
+      }
+      estados[lado].reservas.forEach((id) => { if (id) pares.push([id, "RES"]); });
+      container.innerHTML = pares
+        .map(
+          ([id, pos]) =>
+            '<input type="hidden" name="time_' + lado + '" value="' + id + '">' +
+            '<input type="hidden" name="posicoes_' + lado + '" value="' + pos + '">'
+        )
+        .join("");
+    }
+    atualizarResumo("a");
+    atualizarResumo("b");
+  }
+
+  function abrirEditor(lado) {
+    document.getElementById("tela-resumo").hidden = true;
+    for (const outro of ["a", "b"]) {
+      document.getElementById("editor-" + outro).hidden = outro !== lado;
+    }
+    renderCampo(lado);
+    renderReservas(lado);
+  }
+
+  function mostrarResumo() {
+    document.getElementById("tela-resumo").hidden = false;
+    document.getElementById("editor-a").hidden = true;
+    document.getElementById("editor-b").hidden = true;
+    sincronizarInputs();
+  }
+
+  function abrirPopup(alvo, rotulo) {
+    popupAlvo = alvo;
+    const est = estados[alvo.lado];
+    const atual = alvo.tipo === "campo" ? est.campo[alvo.chave] : est.reservas[alvo.chave];
+
+    document.getElementById("popup-titulo").textContent =
+      "Time " + alvo.lado.toUpperCase() + " · " + rotulo;
+    const removerBtn = document.getElementById("popup-remover");
+    removerBtn.hidden = !atual;
+
+    const busca = document.getElementById("popup-busca");
+    busca.value = "";
+    renderListaPopup("");
+    document.getElementById("popup").hidden = false;
+    busca.focus();
+  }
+
+  function renderListaPopup(termo) {
+    const ocupados = idsOcupados(popupAlvo);
+    const disponiveis = jogadores.filter(
+      (j) => !ocupados.has(j.id) && j.apelido.toLowerCase().includes(termo.toLowerCase())
+    );
+    const lista = document.getElementById("popup-lista");
+    if (!disponiveis.length) {
+      lista.innerHTML = '<div class="vazio">Nenhum jogador disponível.</div>';
+      return;
+    }
+    lista.innerHTML = "";
+    for (const j of disponiveis) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = j.apelido;
+      btn.addEventListener("click", () => escolherJogador(j.id));
+      lista.appendChild(btn);
+    }
+  }
+
+  function escolherJogador(id) {
+    const est = estados[popupAlvo.lado];
+    if (popupAlvo.tipo === "campo") est.campo[popupAlvo.chave] = id;
+    else est.reservas[popupAlvo.chave] = id;
+    fecharPopup();
+    renderCampo(popupAlvo.lado);
+    renderReservas(popupAlvo.lado);
+
+    // Avanco automatico: abre a proxima vaga vazia direto.
+    const proxima = proximaVagaVazia(popupAlvo.lado);
+    if (proxima) {
+      const rotulo =
+        proxima.tipo === "campo"
+          ? POSICOES.find((p) => p[0] === proxima.chave)[1]
+          : "Reserva " + (proxima.chave + 1);
+      abrirPopup(proxima, rotulo);
+    }
+  }
+
+  function removerJogador() {
+    const est = estados[popupAlvo.lado];
+    if (popupAlvo.tipo === "campo") est.campo[popupAlvo.chave] = null;
+    else est.reservas[popupAlvo.chave] = null;
+    fecharPopup();
+    renderCampo(popupAlvo.lado);
+    renderReservas(popupAlvo.lado);
+  }
+
+  function fecharPopup() {
+    document.getElementById("popup").hidden = true;
+    popupAlvo = null;
+  }
+
+  document.querySelectorAll("[data-abrir]").forEach((btn) =>
+    btn.addEventListener("click", () => abrirEditor(btn.dataset.abrir))
+  );
+  document.querySelectorAll("[data-voltar]").forEach((btn) =>
+    btn.addEventListener("click", mostrarResumo)
+  );
+  document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
+  document.getElementById("popup-remover").addEventListener("click", removerJogador);
+  document.getElementById("popup-busca").addEventListener("input", (e) =>
+    renderListaPopup(e.target.value)
+  );
+  document.getElementById("popup").addEventListener("click", (e) => {
+    if (e.target.id === "popup") fecharPopup();
   });
-});
-function contar() {
-  ['a', 'b'].forEach(function (lado) {
-    var n = document.querySelectorAll('input[name="time_' + lado + '"]:checked').length;
-    document.getElementById('conta-' + lado).textContent = n;
+
+  // Pinta a cor do texto do select conforme a cor escolhida, como ja era feito.
+  function pintar(sel) {
+    sel.style.color = sel.selectedOptions[0].dataset.cor;
+  }
+  document.querySelectorAll("[data-cor-select]").forEach((sel) => {
+    pintar(sel);
+    sel.addEventListener("change", () => pintar(sel));
   });
-}
-function pintar(sel) {
-  sel.style.color = sel.selectedOptions[0].dataset.cor;
-}
-document.querySelectorAll('.time select').forEach(pintar);
+
+  document.getElementById("form-pelada").addEventListener("submit", sincronizarInputs);
+
+  sincronizarInputs();
+})();
 </script>
 {% endblock %}

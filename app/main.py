@@ -3,6 +3,7 @@
 Nenhuma conta acontece aqui. Se um dia esta camada devolver JSON em vez de
 HTML, o app de celular funciona sem que nada em stats.py mude.
 """
+import json
 from datetime import date
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -15,7 +16,7 @@ from sqlalchemy.orm import Session
 from app import graficos, stats
 from app.config import BASE_DIR
 from app.db import get_session
-from app.models import Cor, Jogador, Participacao, Partida
+from app.models import POSICOES, Cor, Jogador, Participacao, Partida
 
 app = FastAPI(title="BagreStats")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
@@ -60,13 +61,18 @@ def classificacao(request: Request, sessao: Session = Depends(get_session)):
 
 @app.get("/lancar")
 def form_lancar(request: Request, erro: str = "", sessao: Session = Depends(get_session)):
+    jogadores = _jogadores(sessao)
     return templates.TemplateResponse(
         "lancar.html",
         {
             "request": request,
             "pagina": "lancar",
-            "jogadores": _jogadores(sessao),
+            "jogadores": jogadores,
+            "jogadores_json": json.dumps(
+                [{"id": j.id, "apelido": j.apelido} for j in jogadores]
+            ),
             "cores": _cores(sessao),
+            "posicoes": POSICOES,
             "hoje": date.today().isoformat(),
             "erro": erro,
         },
@@ -81,6 +87,10 @@ def salvar_pelada(
     vencedor: str = Form(...),
     time_a: list[int] = Form(default=[]),
     time_b: list[int] = Form(default=[]),
+    # Paralelas a time_a/time_b: posicoes_a[i] eh a vaga de time_a[i].
+    # A tela sempre envia os dois pares juntos, na mesma ordem.
+    posicoes_a: list[str] = Form(default=[]),
+    posicoes_b: list[str] = Form(default=[]),
     sessao: Session = Depends(get_session),
 ):
     dia = date.fromisoformat(data)
@@ -100,10 +110,18 @@ def salvar_pelada(
     partida = Partida(data=dia, cor_vencedora_id=vencedora)
     sessao.add(partida)
     sessao.flush()
-    for ids, cor in ((time_a, cor_a), (time_b, cor_b)):
-        for jogador_id in ids:
+    for ids, posicoes, cor in (
+        (time_a, posicoes_a, cor_a),
+        (time_b, posicoes_b, cor_b),
+    ):
+        for jogador_id, posicao in zip(ids, posicoes):
             sessao.add(
-                Participacao(partida_id=partida.id, jogador_id=jogador_id, cor_id=cor)
+                Participacao(
+                    partida_id=partida.id,
+                    jogador_id=jogador_id,
+                    cor_id=cor,
+                    posicao=posicao or None,
+                )
             )
     sessao.commit()
     return RedirectResponse("/", 303)

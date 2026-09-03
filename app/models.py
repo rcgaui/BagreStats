@@ -12,6 +12,18 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
+# Formacao fixa (Q4: fixa por enquanto, sem editor de formacao). Ordem = ordem
+# de preenchimento automatico ao escalar pela tela.
+POSICOES = [
+    ("GOL", "Goleiro"),
+    ("ZAG", "Zagueiro"),
+    ("LAT_E", "Lateral esquerdo"),
+    ("LAT_D", "Lateral direito"),
+    ("MEI_E", "Meio-campo esquerdo"),
+    ("MEI_D", "Meio-campo direito"),
+    ("ATA", "Atacante"),
+]
+
 
 class Jogador(Base):
     __tablename__ = "jogador"
@@ -68,6 +80,9 @@ class Participacao(Base):
     partida_id: Mapped[int] = mapped_column(ForeignKey("partida.id", ondelete="CASCADE"))
     jogador_id: Mapped[int] = mapped_column(ForeignKey("jogador.id"))
     cor_id: Mapped[int] = mapped_column(ForeignKey("cor.id"))
+    # Vaga que o jogador ocupou (GOL, ZAG, ... ou RESERVA). Nula nas peladas
+    # lancadas antes desta coluna existir - dado antigo simplesmente nao tem.
+    posicao: Mapped[str | None] = mapped_column(String(10))
 
     partida: Mapped["Partida"] = relationship(back_populates="participacoes")
     jogador: Mapped["Jogador"] = relationship(back_populates="participacoes")

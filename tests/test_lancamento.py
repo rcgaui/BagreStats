@@ -39,13 +39,17 @@ def cliente():
 
 
 def _pelada(**mudancas):
+    # posicoes_a/posicoes_b sao paralelas a time_a/time_b: posicoes_a[i] eh a
+    # vaga de time_a[i]. A tela sempre manda os dois pares juntos.
     base = {
         "data": "2026-09-03",
         "cor_a": 1,
         "cor_b": 2,
         "vencedor": "A",
         "time_a": [1, 2],
+        "posicoes_a": ["GOL", "ZAG"],
         "time_b": [3, 4],
+        "posicoes_b": ["GOL", "RES"],
     }
     return {**base, **mudancas}
 
@@ -59,6 +63,25 @@ def test_salva_a_pelada_e_volta_para_a_classificacao(cliente):
         assert partida.data == date(2026, 9, 3)
         assert len(partida.participacoes) == 4
         assert not partida.empate
+
+
+def test_grava_a_posicao_de_cada_jogador(cliente):
+    c, Fabrica = cliente
+    c.post("/lancar", data=_pelada())
+    with Fabrica() as s:
+        posicoes = {p.jogador_id: p.posicao for p in s.query(Partida).one().participacoes}
+        assert posicoes == {1: "GOL", 2: "ZAG", 3: "GOL", 4: "RES"}
+
+
+def test_jogador_sem_posicao_correspondente_fica_de_fora(cliente):
+    # A tela sempre manda os dois pares do mesmo tamanho; se um dia nao mandar
+    # (bug de JS), o jogador sem par so nao entra - nao quebra o lancamento
+    # inteiro nem grava posicao inventada.
+    c, Fabrica = cliente
+    c.post("/lancar", data=_pelada(time_a=[1, 2], posicoes_a=["GOL"]))
+    with Fabrica() as s:
+        ids = {p.jogador_id for p in s.query(Partida).one().participacoes if p.cor_id == 1}
+        assert ids == {1}
 
 
 def test_empate_grava_vencedor_vazio(cliente):

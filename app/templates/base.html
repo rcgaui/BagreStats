@@ -53,18 +53,6 @@
          cursor:pointer;padding:10px 18px}
   button:hover{filter:brightness(1.1)}
   button.fraco{background:transparent;border-color:var(--linha);color:var(--fraco)}
-  .times{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:620px){.times{grid-template-columns:1fr}}
-  .time{border:1px solid var(--linha);border-radius:9px;overflow:hidden}
-  .time h3{margin:0;padding:11px 13px;font-size:13px;display:flex;
-           justify-content:space-between;align-items:center;background:#171b23}
-  .time .conta{color:var(--fraco);font-size:12px;font-weight:400}
-  .escala{max-height:340px;overflow-y:auto}
-  .escala label{display:flex;align-items:center;gap:9px;padding:9px 13px;margin:0;
-                font-size:14px;text-transform:none;letter-spacing:0;color:var(--txt);
-                cursor:pointer;border-top:1px solid var(--linha)}
-  .escala label:hover{background:#20252e}
-  .escala input{width:16px;height:16px;accent-color:var(--acento);padding:0}
   .linha-form{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
   .erro{background:#3a1f22;border:1px solid #6b2b31;color:#ffb3b8;padding:11px 14px;
         border-radius:8px;margin-bottom:16px;font-size:14px}
@@ -124,6 +112,87 @@
                margin-bottom:9px;font-size:14px}
   .duelo .placar{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.5px}
   .duelo .conta{color:var(--fraco);font-size:12px;font-weight:400}
+
+  /* --- lancar pelada: os dois cartoes de resumo (Q3: um time por vez) --- */
+  .resumo-times{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  @media(max-width:560px){.resumo-times{grid-template-columns:1fr}}
+  .cartao-time{border:1px solid var(--linha);border-radius:9px;background:#171b23;
+               padding:14px;text-align:left;cursor:pointer;color:var(--txt);width:100%;
+               display:flex;flex-direction:column;gap:8px;font:inherit}
+  .cartao-time:hover{border-color:var(--acento)}
+  .cartao-time .titulo{display:flex;align-items:center;justify-content:space-between;
+                        font-size:13px;color:var(--fraco)}
+  .cartao-time .titulo b{color:var(--txt);display:flex;align-items:center;gap:7px}
+  .cartao-time .conta{font-size:22px;font-weight:700}
+  .cartao-time .conta small{font-size:12px;color:var(--fraco);font-weight:400}
+  .cartao-time select{width:100%}
+
+  /* --- editor de escalacao: o campinho --- */
+  .editor-time{border:1px solid var(--linha);border-radius:10px;background:var(--card);
+               padding:16px;margin-bottom:16px}
+  .editor-time .topo-editor{display:flex;align-items:center;justify-content:space-between;
+                             margin-bottom:14px}
+  .editor-time .topo-editor h2{margin:0;padding:0;border:none;font-size:15px;
+                                text-transform:none;letter-spacing:0;color:var(--txt)}
+  .campo{position:relative;width:100%;max-width:340px;margin:0 auto;aspect-ratio:3/4;
+         background:linear-gradient(#2a7a3f,#256b38);border:2px solid #ffffff40;
+         border-radius:10px;overflow:hidden}
+  .campo::before{content:"";position:absolute;inset:0;
+                 background:repeating-linear-gradient(0deg,#ffffff0d 0 12%,transparent 12% 24%)}
+  .campo::after{content:"";position:absolute;left:50%;top:0;width:34%;height:11%;
+                border:2px solid #ffffff55;border-top:none;transform:translateX(-50%);
+                border-radius:0 0 6px 6px}
+  .vaga{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;
+        align-items:center;gap:3px;background:none;border:none;padding:0;cursor:pointer;
+        font:inherit;color:inherit}
+  .vaga .bolha{width:44px;height:44px;border-radius:50%;background:#ffffff26;
+               border:2px dashed #ffffff70;display:grid;place-items:center;
+               font-size:18px;color:#fff;transition:background .15s}
+  .vaga .bolha:hover{background:#ffffff3d}
+  .vaga.ocupada .bolha{background:var(--card);border-style:solid;border-color:#fff}
+  .vaga .rotulo{font-size:10px;color:#ffffffcc;text-shadow:0 1px 2px #000a;
+                white-space:nowrap;max-width:70px;overflow:hidden;text-overflow:ellipsis}
+  .reservas{margin-top:16px}
+  .reservas .rotulo-secao{font-size:11px;color:var(--fraco);text-transform:uppercase;
+                          letter-spacing:.5px;margin-bottom:9px}
+  .lista-reservas{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .lista-reservas .vaga{position:static;transform:none}
+  .lista-reservas .vaga .bolha{background:#ffffff14;border-color:var(--linha)}
+  .lista-reservas .vaga.ocupada .bolha{background:#20252e;border-color:var(--acento);
+                                        border-style:solid}
+  .lista-reservas .vaga .rotulo{color:var(--fraco);text-shadow:none}
+  .add-reserva .bolha{border-style:solid;border-color:var(--linha);color:var(--fraco)}
+  .add-reserva:hover .bolha{border-color:var(--acento);color:var(--acento)}
+
+  /* --- popup de escolha de jogador --- */
+  .popup-fundo{position:fixed;inset:0;background:#000a;display:flex;
+              align-items:flex-end;justify-content:center;z-index:100;padding:0}
+  /* CSS de autor sempre vence o atributo [hidden] do navegador quando a
+     mesma regra ja define display - por isso precisa deste override
+     explicito, senao o popup nasce visivel mesmo com hidden no HTML. */
+  .popup-fundo[hidden]{display:none}
+  @media(min-width:560px){.popup-fundo{align-items:center}}
+  .popup-caixa{background:var(--card);width:100%;max-width:380px;max-height:74vh;
+              border-radius:14px 14px 0 0;display:flex;flex-direction:column;overflow:hidden}
+  @media(min-width:560px){.popup-caixa{border-radius:12px;max-height:70vh}}
+  .popup-caixa .cabeca{padding:14px 16px;border-bottom:1px solid var(--linha)}
+  .popup-caixa .cabeca-linha{display:flex;justify-content:space-between;align-items:center;
+                              margin-bottom:10px}
+  .popup-caixa h3{margin:0;font-size:14px;color:var(--fraco);text-transform:uppercase;
+                  letter-spacing:.5px}
+  .popup-caixa .fechar{background:none;border:none;color:var(--fraco);font-size:20px;
+                       cursor:pointer;padding:0;line-height:1}
+  .popup-caixa input[type=search]{width:100%}
+  .popup-lista{overflow-y:auto;flex:1}
+  .popup-lista button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+                      padding:11px 16px;background:none;border:none;border-top:1px solid var(--linha);
+                      color:var(--txt);font:inherit;cursor:pointer}
+  .popup-lista button:hover{background:#20252e}
+  .popup-lista .vazio{padding:20px 16px;color:var(--fraco);font-size:13px}
+  .remover-jogador{margin:0;padding:11px 16px;background:none;border:none;
+                   border-top:1px solid var(--linha);color:var(--vermelho);font:inherit;
+                   text-align:left;cursor:pointer;width:100%}
+  .remover-jogador:hover{background:#20252e}
 
 </style>
 </head>
