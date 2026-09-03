@@ -1,7 +1,7 @@
 """Carrega PELADA.xlsx para dentro do banco. Roda uma vez e pode ser repetido
 sem duplicar nada.
 
-Nao e um importador generico: a planilha tem uma quinta e 18 linhas, todas
+Nao e um importador generico: a planilha tem uma pelada e 18 linhas, todas
 limpas. Escrever tratamento de formato bagunçado aqui seria trabalho para um
 problema que nao existe.
 """

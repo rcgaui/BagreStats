@@ -2,7 +2,7 @@
 {% block titulo %}{{ p.jogador.apelido }} · BagreStats{% endblock %}
 {% block conteudo %}
 <h1>{{ p.jogador.apelido }}</h1>
-<p class="sub">{{ p.linha.jogos }} quinta{{ 's' if p.linha.jogos != 1 }} ·
+<p class="sub">{{ p.linha.jogos }} pelada{{ 's' if p.linha.jogos != 1 }} ·
    {% if p.sem_perder %}{{ p.sem_perder }} sem perder{% else %}vindo de derrota{% endif %}</p>
 
 <div class="card"><div class="destaque">
@@ -53,7 +53,7 @@
     </tr>
     {% endfor %}
   </tbody></table>
-  {% else %}<div class="vazio">Nenhuma quinta registrada.</div>{% endif %}
+  {% else %}<div class="vazio">Nenhuma pelada registrada.</div>{% endif %}
 </div>
 
 <div class="card">

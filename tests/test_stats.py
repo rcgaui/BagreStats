@@ -26,14 +26,14 @@ def sessao():
 
 @pytest.fixture
 def pelada(sessao):
-    """Tres quintas: preto ganha, branco ganha, empate."""
+    """Tres peladas: preto ganha, branco ganha, empate."""
     preto = Cor(nome="PRETO", codigo="#000")
     branco = Cor(nome="BRANCO", codigo="#fff")
     a, b, c, d = (Jogador(apelido=n) for n in "ABCD")
     sessao.add_all([preto, branco, a, b, c, d])
     sessao.flush()
 
-    def quinta(dia, vencedor, time_preto, time_branco):
+    def registrar_pelada(dia, vencedor, time_preto, time_branco):
         p = Partida(data=dia, cor_vencedora_id=vencedor.id if vencedor else None)
         sessao.add(p)
         sessao.flush()
@@ -41,9 +41,9 @@ def pelada(sessao):
             sessao.add(Participacao(partida_id=p.id, jogador_id=jogador.id, cor_id=cor.id))
         sessao.flush()
 
-    quinta(date(2026, 1, 1), preto, [a, b], [c, d])
-    quinta(date(2026, 1, 8), branco, [a, c], [b, d])
-    quinta(date(2026, 1, 15), None, [a, b], [c, d])
+    registrar_pelada(date(2026, 1, 1), preto, [a, b], [c, d])
+    registrar_pelada(date(2026, 1, 8), branco, [a, c], [b, d])
+    registrar_pelada(date(2026, 1, 15), None, [a, b], [c, d])
     sessao.commit()
     return sessao
 
@@ -93,9 +93,9 @@ def _id(sessao, apelido):
 def test_dupla_conta_so_jogos_no_mesmo_time(pelada):
     p = perfil(pelada, _id(pelada, "A"))
     duplas = {d.jogador.apelido: d for d in p.duplas}
-    # A jogou com B nas quintas 1 e 3 (venceu uma, empatou outra)
+    # A jogou com B nas peladas 1 e 3 (venceu uma, empatou outra)
     assert (duplas["B"].jogos, duplas["B"].vitorias) == (2, 1)
-    # A jogou com C so na quinta 2, e perdeu
+    # A jogou com C so na pelada 2, e perdeu
     assert (duplas["C"].jogos, duplas["C"].vitorias) == (1, 0)
     assert "D" not in duplas  # nunca foram do mesmo time
 
@@ -103,9 +103,9 @@ def test_dupla_conta_so_jogos_no_mesmo_time(pelada):
 def test_freguês_conta_so_jogos_em_times_opostos(pelada):
     p = perfil(pelada, _id(pelada, "A"))
     contra = {f.jogador.apelido: f for f in p.fregueses}
-    # A enfrentou D nas tres quintas e so venceu a primeira
+    # A enfrentou D nas tres peladas e so venceu a primeira
     assert (contra["D"].jogos, contra["D"].vitorias) == (3, 1)
-    # B aparece dos dois lados: parceiro em duas, adversario na quinta 2
+    # B aparece dos dois lados: parceiro em duas, adversario na pelada 2
     assert (contra["B"].jogos, contra["B"].vitorias) == (1, 0)
 
 

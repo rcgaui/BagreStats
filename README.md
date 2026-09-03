@@ -1,6 +1,8 @@
 # BagreStats
 
-Acompanhamento de estatísticas da pelada de quinta-feira.
+Acompanhamento de estatísticas da pelada com os amigos.
+A pelada costuma ser na quinta, mas a data é livre: nada no código depende
+do dia da semana.
 
 ## Rodar
 

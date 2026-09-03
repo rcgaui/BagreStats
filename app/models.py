@@ -2,7 +2,7 @@
 
     jogador       quem joga (id fixo, apelido editavel)
     cor           as cores dos times (preto, branco, ...)
-    partida       uma quinta-feira
+    partida       uma pelada (a data e livre, nao so quinta)
     participacao  liga jogador + partida + cor ("fulano jogou de preto no dia 27")
 """
 from datetime import date
@@ -43,7 +43,7 @@ class Partida(Base):
     __tablename__ = "partida"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    # Uma quinta, uma partida. O banco recusa duas partidas na mesma data.
+    # Uma pelada por dia. O banco recusa duas partidas na mesma data.
     data: Mapped[date] = mapped_column(Date, unique=True)
     # Vazio (None) significa EMPATE. E por isso que nao existe coluna de empate.
     cor_vencedora_id: Mapped[int | None] = mapped_column(ForeignKey("cor.id"))

@@ -4,7 +4,8 @@ Registro do que foi decidido e **por quê**, para não reabrir discussão fechad
 
 ## Domínio
 
-Uma pelada por quinta-feira, dois times, uma única partida que dura a noite
+Uma pelada por rodada — normalmente na quinta, mas **a data é livre e nada no
+código assume dia da semana**. Dois times, uma única partida que dura a noite
 toda. Os times são batidos no dia: **o elenco muda toda semana**.
 
 Consequência central: **time não é uma entidade permanente, a cor é só a
@@ -17,7 +18,7 @@ time. O confronto entre cores existe, mas é decorativo — e isso é assumido.
 |---|---|
 | `jogador` | id fixo + apelido editável |
 | `cor` | as cores disponíveis, com código hexadecimal |
-| `partida` | uma quinta. `cor_vencedora_id` vazio = empate |
+| `partida` | uma pelada. `cor_vencedora_id` vazio = empate |
 | `participacao` | liga jogador + partida + cor |
 
 Decisões que sustentam isso:
@@ -56,5 +57,5 @@ possíveis) aparece como coluna, porque sai das mesmas contagens e custa zero.
 2. Tabelas + primeira migração ✅
 3. Carga do `PELADA.xlsx` ✅
 4. Classificação ✅
-5. Lançar quinta ✅
+5. Lançar pelada ✅
 6. Perfil, duplas, fregueses, confronto de cores ✅

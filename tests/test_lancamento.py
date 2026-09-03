@@ -1,4 +1,4 @@
-"""Testes da tela de lancar quinta: as validacoes que impedem lixo no banco."""
+"""Testes da tela de lancar pelada: as validacoes que impedem lixo no banco."""
 from datetime import date
 
 import pytest
@@ -38,7 +38,7 @@ def cliente():
     app.dependency_overrides.clear()
 
 
-def _quinta(**mudancas):
+def _pelada(**mudancas):
     base = {
         "data": "2026-09-03",
         "cor_a": 1,
@@ -50,9 +50,9 @@ def _quinta(**mudancas):
     return {**base, **mudancas}
 
 
-def test_salva_a_quinta_e_volta_para_a_classificacao(cliente):
+def test_salva_a_pelada_e_volta_para_a_classificacao(cliente):
     c, Fabrica = cliente
-    r = c.post("/lancar", data=_quinta())
+    r = c.post("/lancar", data=_pelada())
     assert r.status_code == 303 and r.headers["location"] == "/"
     with Fabrica() as s:
         partida = s.query(Partida).one()
@@ -63,14 +63,14 @@ def test_salva_a_quinta_e_volta_para_a_classificacao(cliente):
 
 def test_empate_grava_vencedor_vazio(cliente):
     c, Fabrica = cliente
-    c.post("/lancar", data=_quinta(vencedor="EMPATE"))
+    c.post("/lancar", data=_pelada(vencedor="EMPATE"))
     with Fabrica() as s:
         assert s.query(Partida).one().empate
 
 
 def test_recusa_jogador_escalado_nos_dois_times(cliente):
     c, Fabrica = cliente
-    r = c.post("/lancar", data=_quinta(time_a=[1, 2], time_b=[2, 3]))
+    r = c.post("/lancar", data=_pelada(time_a=[1, 2], time_b=[2, 3]))
     assert "erro" in r.headers["location"]
     with Fabrica() as s:
         assert s.query(Partida).count() == 0
@@ -78,20 +78,20 @@ def test_recusa_jogador_escalado_nos_dois_times(cliente):
 
 def test_recusa_times_com_a_mesma_cor(cliente):
     c, Fabrica = cliente
-    r = c.post("/lancar", data=_quinta(cor_b=1))
+    r = c.post("/lancar", data=_pelada(cor_b=1))
     assert "mesma+cor" in r.headers["location"]
 
 
 def test_recusa_time_vazio(cliente):
     c, Fabrica = cliente
-    r = c.post("/lancar", data=_quinta(time_b=[]))
+    r = c.post("/lancar", data=_pelada(time_b=[]))
     assert "erro" in r.headers["location"]
 
 
 def test_recusa_duas_partidas_na_mesma_data(cliente):
     c, Fabrica = cliente
-    c.post("/lancar", data=_quinta())
-    r = c.post("/lancar", data=_quinta(time_a=[3], time_b=[4]))
+    c.post("/lancar", data=_pelada())
+    r = c.post("/lancar", data=_pelada(time_a=[3], time_b=[4]))
     assert "Ja+existe" in r.headers["location"]
     with Fabrica() as s:
         assert s.query(Partida).count() == 1

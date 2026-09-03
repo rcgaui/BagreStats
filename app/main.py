@@ -59,7 +59,7 @@ def form_lancar(request: Request, erro: str = "", sessao: Session = Depends(get_
 
 
 @app.post("/lancar")
-def salvar_quinta(
+def salvar_pelada(
     data: str = Form(...),
     cor_a: int = Form(...),
     cor_b: int = Form(...),
