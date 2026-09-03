@@ -11,6 +11,7 @@ dia passar de ~50 mil participacoes, virar agregacao em SQL.
 """
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -105,6 +106,9 @@ class Perfil:
     fregueses: list[Parceria] = field(default_factory=list)
     sem_perder: int = 0
     historico: list[tuple[Partida, Cor, str]] = field(default_factory=list)
+    # Aproveitamento acumulado apos cada pelada, na ordem em que aconteceram.
+    # E o que o grafico de linha desenha: a curva da carreira do jogador.
+    evolucao: list[tuple[date, float]] = field(default_factory=list)
 
 
 def perfil(sessao: Session, jogador_id: int) -> Perfil | None:
@@ -144,6 +148,18 @@ def perfil(sessao: Session, jogador_id: int) -> Perfil | None:
             if resultado == VITORIA:
                 par.vitorias += 1
 
+    # Evolucao: refaz a conta pelada a pelada, guardando o acumulado de cada
+    # ponto no tempo. O historico ja esta em ordem cronologica aqui.
+    evolucao, corrida = [], Linha(jogador=jogador)
+    for partida, _, resultado in historico:
+        if resultado == VITORIA:
+            corrida.vitorias += 1
+        elif resultado == EMPATE:
+            corrida.empates += 1
+        else:
+            corrida.derrotas += 1
+        evolucao.append((partida.data, corrida.aproveitamento))
+
     # Sequencia sem perder: conta de tras para frente ate a primeira derrota.
     sem_perder = 0
     for _, _, resultado in reversed(historico):
@@ -161,6 +177,7 @@ def perfil(sessao: Session, jogador_id: int) -> Perfil | None:
         fregueses=ordenar(fregueses),
         sem_perder=sem_perder,
         historico=list(reversed(historico)),
+        evolucao=evolucao,
     )
 
 

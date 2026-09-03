@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import stats
+from app import graficos, stats
 from app.config import BASE_DIR
 from app.db import get_session
 from app.models import Cor, Jogador, Participacao, Partida
@@ -20,6 +20,21 @@ from app.models import Cor, Jogador, Participacao, Partida
 app = FastAPI(title="BagreStats")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
+
+
+def _iniciais(apelido: str) -> str:
+    partes = apelido.split()
+    return (partes[0][0] + partes[-1][0]).upper() if len(partes) > 1 else apelido[:2].upper()
+
+
+def _cor_do_apelido(apelido: str) -> str:
+    """Cor estavel derivada do proprio nome: o mesmo jogador tem sempre a mesma."""
+    return f"hsl({sum(map(ord, apelido)) * 47 % 360}, 62%, 68%)"
+
+
+templates.env.filters["iniciais"] = _iniciais
+templates.env.filters["cor_do_apelido"] = _cor_do_apelido
+templates.env.globals["proporcoes"] = graficos.proporcoes
 
 
 def _cores(sessao: Session) -> list[Cor]:
@@ -99,8 +114,12 @@ def ver_jogador(jogador_id: int, request: Request, sessao: Session = Depends(get
     perfil = stats.perfil(sessao, jogador_id)
     if perfil is None:
         return RedirectResponse("/jogadores", 303)
+    curva = graficos.linha(
+        [(d.strftime("%d/%m"), v) for d, v in perfil.evolucao], largura=520, altura=130
+    )
     return templates.TemplateResponse(
-        "perfil.html", {"request": request, "pagina": "jogadores", "p": perfil}
+        "perfil.html",
+        {"request": request, "pagina": "jogadores", "p": perfil, "curva": curva},
     )
 
 
@@ -150,5 +169,11 @@ def nova_cor(
 @app.get("/confrontos")
 def ver_confrontos(request: Request, sessao: Session = Depends(get_session)):
     return templates.TemplateResponse(
-        "confrontos.html", {"request": request, "pagina": "confrontos", "confrontos": stats.confrontos(sessao)}
+        "confrontos.html",
+        {
+            "request": request,
+            "pagina": "confrontos",
+            "confrontos": stats.confrontos(sessao),
+            "cores": {c.nome: c.codigo for c in _cores(sessao)},
+        },
     )

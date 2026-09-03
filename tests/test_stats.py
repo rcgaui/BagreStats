@@ -123,3 +123,19 @@ def test_jogador_sem_partida_nao_quebra(sessao):
     p = perfil(sessao, novato.id)
     assert p.linha.jogos == 0
     assert p.linha.aproveitamento == 0.0
+
+
+def test_evolucao_acumula_pelada_a_pelada(pelada):
+    p = perfil(pelada, _id(pelada, "A"))
+    datas = [d for d, _ in p.evolucao]
+    valores = [round(v, 1) for _, v in p.evolucao]
+    assert datas == [date(2026, 1, 1), date(2026, 1, 8), date(2026, 1, 15)]
+    # venceu (3/3), perdeu (3/6), empatou (4/9)
+    assert valores == [100.0, 50.0, 44.4]
+
+
+def test_evolucao_vazia_para_quem_nao_jogou(sessao):
+    novato = Jogador(apelido="Novato")
+    sessao.add(novato)
+    sessao.commit()
+    assert perfil(sessao, novato.id).evolucao == []

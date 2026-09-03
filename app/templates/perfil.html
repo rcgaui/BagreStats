@@ -1,17 +1,72 @@
 {% extends "base.html" %}
 {% block titulo %}{{ p.jogador.apelido }} · BagreStats{% endblock %}
 {% block conteudo %}
-<h1>{{ p.jogador.apelido }}</h1>
-<p class="sub">{{ p.linha.jogos }} pelada{{ 's' if p.linha.jogos != 1 }} ·
-   {% if p.sem_perder %}{{ p.sem_perder }} sem perder{% else %}vindo de derrota{% endif %}</p>
 
-<div class="card"><div class="destaque">
+<div class="card"><div class="destaque" style="align-items:center;gap:18px">
+  <div style="flex:none">
+    <span class="av g" style="background:{{ p.jogador.apelido|cor_do_apelido }}">{{ p.jogador.apelido|iniciais }}</span>
+  </div>
+  <div style="flex:2;min-width:150px">
+    <b style="font-size:22px">{{ p.jogador.apelido }}</b>
+    <small style="text-transform:none;letter-spacing:0;font-size:13px">
+      {{ p.linha.jogos }} pelada{{ 's' if p.linha.jogos != 1 }}
+      {%- if p.sem_perder %} · {{ p.sem_perder }} sem perder{% endif %}
+    </small>
+  </div>
   <div><b>{{ '%.0f'|format(p.linha.aproveitamento) }}%</b><small>Aproveitamento</small></div>
   <div><b>{{ p.linha.pontos }}</b><small>Pontos</small></div>
-  <div><b class="V">{{ p.linha.vitorias }}</b><small>Vitórias</small></div>
-  <div><b class="E">{{ p.linha.empates }}</b><small>Empates</small></div>
-  <div><b class="D">{{ p.linha.derrotas }}</b><small>Derrotas</small></div>
-</div></div>
+</div>
+
+{% if p.linha.jogos %}
+{% set prop = proporcoes(p.linha.vitorias, p.linha.empates, p.linha.derrotas) %}
+<div style="padding:0 16px 16px">
+  <div class="pilha">
+    <i class="v" style="width:{{ prop[0] }}%"></i>
+    <i class="e" style="width:{{ prop[1] }}%"></i>
+    <i class="d" style="width:{{ prop[2] }}%"></i>
+  </div>
+  <div class="legenda">
+    <span class="v">Vitórias <b>{{ p.linha.vitorias }}</b></span>
+    <span class="e">Empates <b>{{ p.linha.empates }}</b></span>
+    <span class="d">Derrotas <b>{{ p.linha.derrotas }}</b></span>
+  </div>
+</div>
+{% endif %}
+</div>
+
+{% if p.evolucao %}
+<div class="card">
+  <h2>Evolução do aproveitamento</h2>
+  <div class="gr">
+    <svg viewBox="0 0 {{ curva.largura }} {{ curva.altura + 18 }}" role="img"
+         aria-label="Aproveitamento de {{ p.jogador.apelido }} ao longo das peladas">
+      {% for marca in [0, 50, 100] %}
+        {% set y = 10 + (curva.altura - 20) * (1 - marca / 100) %}
+        <line class="grade" x1="26" y1="{{ y }}" x2="{{ curva.largura }}" y2="{{ y }}"></line>
+        <text class="marca-y" x="0" y="{{ y + 3.5 }}">{{ marca }}%</text>
+      {% endfor %}
+      {% if curva.pontos|length > 1 %}
+        <path class="sombra" d="{{ curva.area }}"></path>
+        <polyline class="curva" points="{{ curva.caminho }}"></polyline>
+      {% endif %}
+      {% for ponto in curva.pontos %}
+        <circle class="no" cx="{{ ponto.x }}" cy="{{ ponto.y }}" r="4">
+          <title>{{ ponto.rotulo }} — {{ '%.0f'|format(ponto.valor) }}%</title>
+        </circle>
+      {% endfor %}
+      {% if curva.pontos %}
+        <text class="marca-x" x="{{ curva.pontos[0].x }}" y="{{ curva.altura + 12 }}">{{ curva.pontos[0].rotulo }}</text>
+        {% if curva.pontos|length > 1 %}
+        <text class="marca-x" x="{{ curva.pontos[-1].x }}" y="{{ curva.altura + 12 }}">{{ curva.pontos[-1].rotulo }}</text>
+        {% endif %}
+      {% endif %}
+    </svg>
+    {% if curva.pontos|length < 3 %}
+    <p class="sub" style="margin:10px 0 0">Com {{ curva.pontos|length }} pelada{{ 's' if curva.pontos|length != 1 }} a curva ainda não diz muita coisa. Ela ganha forma a partir da quarta ou quinta.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 
 <div class="grid2">
   <div class="card">
@@ -19,7 +74,9 @@
     {% if p.duplas %}
     <table><thead><tr><th>Jogador</th><th>J</th><th>V</th><th>%</th></tr></thead><tbody>
       {% for d in p.duplas %}
-      <tr><td><a href="/jogador/{{ d.jogador.id }}">{{ d.jogador.apelido }}</a></td>
+      <tr><td><a href="/jogador/{{ d.jogador.id }}" class="quem">
+            <span class="av" style="background:{{ d.jogador.apelido|cor_do_apelido }}">{{ d.jogador.apelido|iniciais }}</span>
+            {{ d.jogador.apelido }}</a></td>
           <td>{{ d.jogos }}</td><td class="V">{{ d.vitorias }}</td>
           <td>{{ '%.0f'|format(d.aproveitamento) }}%</td></tr>
       {% endfor %}
@@ -32,7 +89,9 @@
     {% if p.fregueses %}
     <table><thead><tr><th>Jogador</th><th>J</th><th>V</th><th>%</th></tr></thead><tbody>
       {% for f in p.fregueses %}
-      <tr><td><a href="/jogador/{{ f.jogador.id }}">{{ f.jogador.apelido }}</a></td>
+      <tr><td><a href="/jogador/{{ f.jogador.id }}" class="quem">
+            <span class="av" style="background:{{ f.jogador.apelido|cor_do_apelido }}">{{ f.jogador.apelido|iniciais }}</span>
+            {{ f.jogador.apelido }}</a></td>
           <td>{{ f.jogos }}</td><td class="V">{{ f.vitorias }}</td>
           <td>{{ '%.0f'|format(f.aproveitamento) }}%</td></tr>
       {% endfor %}

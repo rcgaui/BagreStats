@@ -13,9 +13,14 @@
   </tr></thead>
   <tbody>
   {% for l in tabela %}
-    <tr>
-      <td class="pos">{{ loop.index }}</td>
-      <td><a href="/jogador/{{ l.jogador.id }}">{{ l.jogador.apelido }}</a></td>
+    <tr class="{{ 'top' if loop.index <= 3 }}">
+      <td class="pos {{ 'm%d'|format(loop.index) if loop.index <= 3 }}">{{ loop.index }}</td>
+      <td>
+        <a href="/jogador/{{ l.jogador.id }}" class="quem">
+          <span class="av" style="background:{{ l.jogador.apelido|cor_do_apelido }}">{{ l.jogador.apelido|iniciais }}</span>
+          {{ l.jogador.apelido }}
+        </a>
+      </td>
       <td>{{ l.jogos }}</td>
       <td class="V">{{ l.vitorias }}</td>
       <td class="E">{{ l.empates }}</td>

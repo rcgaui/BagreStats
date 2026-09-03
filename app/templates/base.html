@@ -80,6 +80,51 @@
   .selo.V{background:#1e4d33;color:#5fd68f}
   .selo.E{background:#4d431e;color:#e8c95f}
   .selo.D{background:#4d2222;color:#f08a80}
+  /* --- avatar: circulo com as iniciais, cor derivada do proprio apelido --- */
+  .quem{display:flex;align-items:center;gap:10px}
+  .av{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;
+      font-size:11px;font-weight:700;color:#0d0f13;letter-spacing:-.2px}
+  .av.g{width:56px;height:56px;font-size:20px}
+  /* --- podio: as tres primeiras posicoes --- */
+  .pos.m1{color:#f5c451;font-weight:700}
+  .pos.m2{color:#c9d1d9;font-weight:700}
+  .pos.m3{color:#cd8b52;font-weight:700}
+  tr.top td{background:linear-gradient(90deg,#1f2630 0%,transparent 55%)}
+  /* --- graficos --- */
+  .gr{padding:16px}
+  .gr svg{display:block;width:100%;height:auto;overflow:visible}
+  .gr .grade{stroke:var(--linha);stroke-width:1}
+  .gr .curva{fill:none;stroke:var(--acento);stroke-width:2.5;
+             stroke-linejoin:round;stroke-linecap:round}
+  .gr .sombra{fill:var(--acento);opacity:.12}
+  .gr .no{fill:var(--card);stroke:var(--acento);stroke-width:2.5}
+  .gr .marca-y{fill:var(--fraco);font-size:10px}
+  .gr .marca-x{fill:var(--fraco);font-size:10px;text-anchor:middle}
+  /* --- barra empilhada V/E/D --- */
+  .pilha{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--linha)}
+  .pilha i{display:block}
+  .pilha .v{background:var(--verde)} .pilha .e{background:var(--amarelo)}
+  .pilha .d{background:var(--vermelho)}
+  /* Na barra de confronto quem pinta e a cor do colete, nao o julgamento de
+     bom/ruim: ali nao existe lado certo. O contorno interno impede que uma
+     cor escura como o preto suma no fundo escuro. */
+  .pilha.coletes i{box-shadow:inset 0 0 0 1px #ffffff26}
+  .legenda .colete::before{background:var(--c)}
+  .legenda{display:flex;gap:16px;margin-top:11px;font-size:12px;color:var(--fraco);flex-wrap:wrap}
+  .legenda b{color:var(--txt);font-weight:600}
+  .legenda span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;
+                        margin-right:6px;vertical-align:0}
+  .legenda .v::before{background:var(--verde)}
+  .legenda .e::before{background:var(--amarelo)}
+  .legenda .d::before{background:var(--vermelho)}
+  /* --- confronto: barra com as duas cores --- */
+  .duelo{padding:14px 16px;border-bottom:1px solid var(--linha)}
+  .duelo:last-child{border-bottom:none}
+  .duelo .topo{display:flex;justify-content:space-between;align-items:center;
+               margin-bottom:9px;font-size:14px}
+  .duelo .placar{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.5px}
+  .duelo .conta{color:var(--fraco);font-size:12px;font-weight:400}
+
 </style>
 </head>
 <body>

@@ -2,24 +2,31 @@
 {% block titulo %}Confrontos · BagreStats{% endblock %}
 {% block conteudo %}
 <h1>Confronto de cores</h1>
-<p class="sub">Qual colete ganha mais. Não quer dizer absolutamente nada, já que os times mudam toda semana.</p>
+<p class="sub">Qual colete ganha mais. Não quer dizer absolutamente nada, já que os times mudam toda pelada.</p>
 
 <div class="card">
 {% if confrontos %}
-<table>
-  <thead><tr><th>Confronto</th><th>J</th><th>1º</th><th>E</th><th>2º</th></tr></thead>
-  <tbody>
   {% for c in confrontos %}
-  <tr>
-    <td>{{ c.cor_a }} <span style="color:var(--fraco)">x</span> {{ c.cor_b }}</td>
-    <td>{{ c.jogos }}</td>
-    <td class="V">{{ c.vitorias_a }}</td>
-    <td class="E">{{ c.empates }}</td>
-    <td class="V">{{ c.vitorias_b }}</td>
-  </tr>
+  {% set p = proporcoes(c.vitorias_a, c.empates, c.vitorias_b) %}
+  <div class="duelo">
+    <div class="topo">
+      <span><span class="bola" style="background:{{ cores.get(c.cor_a, '#888') }}"></span>{{ c.cor_a }}</span>
+      <span class="placar">{{ c.vitorias_a }} <span class="conta">·{{ c.empates }}·</span> {{ c.vitorias_b }}</span>
+      <span>{{ c.cor_b }}<span class="bola" style="background:{{ cores.get(c.cor_b, '#888') }};margin:0 0 0 7px"></span></span>
+    </div>
+    <div class="pilha coletes">
+      <i style="width:{{ p[0] }}%;background:{{ cores.get(c.cor_a, '#888') }}"></i>
+      <i style="width:{{ p[1] }}%;background:var(--linha)"></i>
+      <i style="width:{{ p[2] }}%;background:{{ cores.get(c.cor_b, '#888') }}"></i>
+    </div>
+    <div class="legenda">
+      <span class="colete" style="--c:{{ cores.get(c.cor_a, '#888') }}">{{ c.cor_a|capitalize }} <b>{{ c.vitorias_a }}</b></span>
+      <span class="colete" style="--c:var(--linha)">Empates <b>{{ c.empates }}</b></span>
+      <span class="colete" style="--c:{{ cores.get(c.cor_b, '#888') }}">{{ c.cor_b|capitalize }} <b>{{ c.vitorias_b }}</b></span>
+      <span style="margin-left:auto">{{ c.jogos }} pelada{{ 's' if c.jogos != 1 }}</span>
+    </div>
+  </div>
   {% endfor %}
-  </tbody>
-</table>
-{% else %}<div class="vazio">Nenhuma partida registrada ainda.</div>{% endif %}
+{% else %}<div class="vazio">Nenhuma pelada registrada ainda.</div>{% endif %}
 </div>
 {% endblock %}
