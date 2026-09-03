@@ -1,0 +1,29 @@
+{
+  // Como rodar o BagreStats pelo VS Code: F5, ou o painel "Run and Debug".
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // O do dia a dia: salva um arquivo e o servidor reinicia sozinho.
+      "name": "BagreStats: rodar (com reload)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "8010"],
+      "jinja": true,
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      // Para depurar de verdade. Sem --reload de proposito: o reload sobe um
+      // processo filho, e os breakpoints costumam nao parar nele.
+      "name": "BagreStats: depurar (breakpoints)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--port", "8010"],
+      "jinja": true,
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}
