@@ -1,5 +1,5 @@
 """Testes da tela de lancar pelada: as validacoes que impedem lixo no banco."""
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -97,6 +97,26 @@ def test_recusa_jogador_escalado_nos_dois_times(cliente):
     assert "erro" in r.headers["location"]
     with Fabrica() as s:
         assert s.query(Partida).count() == 0
+
+
+def test_recusa_data_no_futuro(cliente):
+    # Pelada que ainda nao aconteceu nao pode ser lancada. O calendario apaga
+    # essas datas, mas a regra precisa valer no servidor: o navegador nao e
+    # uma barreira de confianca.
+    c, Fabrica = cliente
+    amanha = (date.today() + timedelta(days=1)).isoformat()
+    r = c.post("/lancar", data=_pelada(data=amanha))
+    assert "ainda+nao+chegou" in r.headers["location"]
+    with Fabrica() as s:
+        assert s.query(Partida).count() == 0
+
+
+def test_aceita_a_data_de_hoje(cliente):
+    c, Fabrica = cliente
+    r = c.post("/lancar", data=_pelada(data=date.today().isoformat()))
+    assert r.headers["location"] == "/"
+    with Fabrica() as s:
+        assert s.query(Partida).one().data == date.today()
 
 
 def test_recusa_times_com_a_mesma_cor(cliente):

@@ -96,6 +96,10 @@ def salvar_pelada(
     dia = date.fromisoformat(data)
 
     # Validacoes na camada web: mensagem amigavel antes de o banco reclamar.
+    # Pelada que ainda nao aconteceu nao existe. O calendario ja apaga datas
+    # futuras, mas a regra tem de valer aqui: o navegador nao e confiavel.
+    if dia > date.today():
+        return RedirectResponse("/lancar?erro=Essa+data+ainda+nao+chegou", 303)
     if cor_a == cor_b:
         return RedirectResponse("/lancar?erro=Os+dois+times+estao+com+a+mesma+cor", 303)
     repetidos = set(time_a) & set(time_b)
