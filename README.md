@@ -107,12 +107,22 @@ de celular sem tocar nas regras.
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .env.example .env
 .venv/bin/alembic upgrade head
 .venv/bin/uvicorn app.main:app --reload
 ```
 
-Abrir <http://127.0.0.1:8000>.
+Abrir <http://127.0.0.1:8000>. Não precisa de configuração: sem nenhum ajuste,
+o banco é um arquivo `bagre.db` criado na própria pasta do projeto.
+
+### Configuração (opcional)
+
+Uma única variável, `DATABASE_URL`, lida de um arquivo `.env` na raiz — que
+nunca entra no repositório, porque é onde ficariam os valores reais no dia em
+que houver uma senha:
+
+```
+DATABASE_URL=postgresql://usuario:senha@localhost:5432/bagrestats
+```
 
 ## Testes
 
