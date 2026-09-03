@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}Elenco · BagreStats{% endblock %}
+{% block conteudo %}
+<h1>Elenco</h1>
+<p class="sub">{{ jogadores|length }} jogadores cadastrados · {{ cores|length }} cores disponíveis</p>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Jogadores</h2>
+    <table><tbody>
+      {% for j in jogadores %}
+      <tr><td><a href="/jogador/{{ j.id }}">{{ j.apelido }}</a></td></tr>
+      {% endfor %}
+    </tbody></table>
+    <form method="post" action="/jogadores" class="linha-form">
+      <div><label>Novo jogador</label><input name="apelido" placeholder="Apelido" required></div>
+      <button type="submit">Adicionar</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Cores</h2>
+    <table><tbody>
+      {% for c in cores %}
+      <tr><td><span class="bola" style="background:{{ c.codigo }}"></span>{{ c.nome }}</td></tr>
+      {% endfor %}
+    </tbody></table>
+    <form method="post" action="/cores" class="linha-form">
+      <div><label>Nova cor</label><input name="nome" placeholder="Ex: ROSA" required></div>
+      <div><label>Tom</label><input type="color" name="codigo" value="#888888"></div>
+      <button type="submit">Adicionar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Classificação · BagreStats{% endblock %}
+{% block conteudo %}
+<h1>Classificação</h1>
+<p class="sub">{{ total_partidas }} quinta{{ 's' if total_partidas != 1 }} registrada{{ 's' if total_partidas != 1 }} · 3 pontos por vitória, 1 por empate</p>
+
+<div class="card">
+{% if tabela %}
+<table>
+  <thead><tr>
+    <th class="pos">#</th><th>Jogador</th>
+    <th>J</th><th>V</th><th>E</th><th>D</th><th>Pts</th><th>Aproveitamento</th>
+  </tr></thead>
+  <tbody>
+  {% for l in tabela %}
+    <tr>
+      <td class="pos">{{ loop.index }}</td>
+      <td><a href="/jogador/{{ l.jogador.id }}">{{ l.jogador.apelido }}</a></td>
+      <td>{{ l.jogos }}</td>
+      <td class="V">{{ l.vitorias }}</td>
+      <td class="E">{{ l.empates }}</td>
+      <td class="D">{{ l.derrotas }}</td>
+      <td class="pts">{{ l.pontos }}</td>
+      <td><span class="barra"><i style="width:{{ l.aproveitamento|round|int }}%"></i></span>{{ '%.0f'|format(l.aproveitamento) }}%</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="vazio">Nenhuma quinta registrada ainda. <a href="/lancar" style="color:var(--acento)">Lançar a primeira</a></div>
+{% endif %}
+</div>
+{% endblock %}

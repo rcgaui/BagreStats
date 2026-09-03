@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Confrontos · BagreStats{% endblock %}
+{% block conteudo %}
+<h1>Confronto de cores</h1>
+<p class="sub">Qual colete ganha mais. Não quer dizer absolutamente nada, já que os times mudam toda semana.</p>
+
+<div class="card">
+{% if confrontos %}
+<table>
+  <thead><tr><th>Confronto</th><th>J</th><th>1º</th><th>E</th><th>2º</th></tr></thead>
+  <tbody>
+  {% for c in confrontos %}
+  <tr>
+    <td>{{ c.cor_a }} <span style="color:var(--fraco)">x</span> {{ c.cor_b }}</td>
+    <td>{{ c.jogos }}</td>
+    <td class="V">{{ c.vitorias_a }}</td>
+    <td class="E">{{ c.empates }}</td>
+    <td class="V">{{ c.vitorias_b }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<div class="vazio">Nenhuma partida registrada ainda.</div>{% endif %}
+</div>
+{% endblock %}

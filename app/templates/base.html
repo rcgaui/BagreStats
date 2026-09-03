@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}BagreStats{% endblock %}</title>
+<style>
+  :root{--bg:#12151a;--card:#1b1f27;--linha:#262b35;--txt:#e7ebf0;--fraco:#8b95a5;
+        --verde:#2ecc71;--amarelo:#f1c40f;--vermelho:#e74c3c;--acento:#3ba55d}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{background:var(--card);border-bottom:1px solid var(--linha);padding:0 16px;
+         position:sticky;top:0;z-index:10}
+  nav{max-width:900px;margin:0 auto;display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+  nav .marca{font-weight:700;margin-right:16px;padding:14px 0;letter-spacing:-.3px}
+  nav .marca span{color:var(--acento)}
+  nav a{color:var(--fraco);text-decoration:none;padding:14px 12px;font-size:14px;
+        border-bottom:2px solid transparent}
+  nav a:hover{color:var(--txt)}
+  nav a.ativo{color:var(--txt);border-bottom-color:var(--acento)}
+  main{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--fraco);font-size:13px;margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--linha);border-radius:10px;
+        overflow:hidden;margin-bottom:16px}
+  .card h2{font-size:14px;margin:0;padding:14px 16px;border-bottom:1px solid var(--linha);
+           color:var(--fraco);text-transform:uppercase;letter-spacing:.5px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:right;color:var(--fraco);font-size:11px;text-transform:uppercase;
+     letter-spacing:.5px;padding:10px 8px;border-bottom:1px solid var(--linha);font-weight:600}
+  th:nth-child(-n+2),td:nth-child(-n+2){text-align:left}
+  td{padding:11px 8px;border-bottom:1px solid var(--linha);text-align:right}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#20252e}
+  td a{color:var(--txt);text-decoration:none;font-weight:500}
+  td a:hover{color:var(--acento)}
+  .pos{color:var(--fraco);width:32px;font-variant-numeric:tabular-nums}
+  .pts{font-weight:700}
+  .barra{display:inline-block;width:52px;height:5px;background:var(--linha);
+         border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:8px}
+  .barra i{display:block;height:100%;background:var(--acento)}
+  .bola{display:inline-block;width:11px;height:11px;border-radius:50%;
+        vertical-align:-1px;margin-right:7px;border:1px solid #0006}
+  .vazio{padding:28px 16px;color:var(--fraco);text-align:center;font-size:14px}
+  form{padding:16px}
+  label{display:block;font-size:12px;color:var(--fraco);margin:0 0 6px;
+        text-transform:uppercase;letter-spacing:.5px}
+  input,select,button{font:inherit;border-radius:7px;border:1px solid var(--linha);
+                      background:#141820;color:var(--txt);padding:9px 11px}
+  input[type=color]{padding:3px;height:38px;width:52px}
+  button{background:var(--acento);border-color:var(--acento);color:#fff;font-weight:600;
+         cursor:pointer;padding:10px 18px}
+  button:hover{filter:brightness(1.1)}
+  button.fraco{background:transparent;border-color:var(--linha);color:var(--fraco)}
+  .times{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:620px){.times{grid-template-columns:1fr}}
+  .time{border:1px solid var(--linha);border-radius:9px;overflow:hidden}
+  .time h3{margin:0;padding:11px 13px;font-size:13px;display:flex;
+           justify-content:space-between;align-items:center;background:#171b23}
+  .time .conta{color:var(--fraco);font-size:12px;font-weight:400}
+  .escala{max-height:340px;overflow-y:auto}
+  .escala label{display:flex;align-items:center;gap:9px;padding:9px 13px;margin:0;
+                font-size:14px;text-transform:none;letter-spacing:0;color:var(--txt);
+                cursor:pointer;border-top:1px solid var(--linha)}
+  .escala label:hover{background:#20252e}
+  .escala input{width:16px;height:16px;accent-color:var(--acento);padding:0}
+  .linha-form{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
+  .erro{background:#3a1f22;border:1px solid #6b2b31;color:#ffb3b8;padding:11px 14px;
+        border-radius:8px;margin-bottom:16px;font-size:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.grid2{grid-template-columns:1fr}}
+  .destaque{display:flex;gap:24px;padding:16px;flex-wrap:wrap}
+  .destaque div{flex:1;min-width:88px}
+  .destaque b{display:block;font-size:26px;font-weight:700;letter-spacing:-1px}
+  .destaque small{color:var(--fraco);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .V{color:var(--verde)}.E{color:var(--amarelo)}.D{color:var(--vermelho)}
+  .selo{display:inline-block;width:19px;height:19px;line-height:19px;text-align:center;
+        border-radius:4px;font-size:11px;font-weight:700;margin-right:3px}
+  .selo.V{background:#1e4d33;color:#5fd68f}
+  .selo.E{background:#4d431e;color:#e8c95f}
+  .selo.D{background:#4d2222;color:#f08a80}
+</style>
+</head>
+<body>
+<header><nav>
+  <div class="marca">Bagre<span>Stats</span></div>
+  <a href="/" class="{{ 'ativo' if pagina=='tabela' }}">Classificação</a>
+  <a href="/lancar" class="{{ 'ativo' if pagina=='lancar' }}">Lançar quinta</a>
+  <a href="/confrontos" class="{{ 'ativo' if pagina=='confrontos' }}">Confrontos</a>
+  <a href="/jogadores" class="{{ 'ativo' if pagina=='jogadores' }}">Elenco</a>
+</nav></header>
+<main>{% block conteudo %}{% endblock %}</main>
+</body>
+</html>

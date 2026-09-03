@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block titulo %}{{ p.jogador.apelido }} · BagreStats{% endblock %}
+{% block conteudo %}
+<h1>{{ p.jogador.apelido }}</h1>
+<p class="sub">{{ p.linha.jogos }} quinta{{ 's' if p.linha.jogos != 1 }} ·
+   {% if p.sem_perder %}{{ p.sem_perder }} sem perder{% else %}vindo de derrota{% endif %}</p>
+
+<div class="card"><div class="destaque">
+  <div><b>{{ '%.0f'|format(p.linha.aproveitamento) }}%</b><small>Aproveitamento</small></div>
+  <div><b>{{ p.linha.pontos }}</b><small>Pontos</small></div>
+  <div><b class="V">{{ p.linha.vitorias }}</b><small>Vitórias</small></div>
+  <div><b class="E">{{ p.linha.empates }}</b><small>Empates</small></div>
+  <div><b class="D">{{ p.linha.derrotas }}</b><small>Derrotas</small></div>
+</div></div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Melhores duplas</h2>
+    {% if p.duplas %}
+    <table><thead><tr><th>Jogador</th><th>J</th><th>V</th><th>%</th></tr></thead><tbody>
+      {% for d in p.duplas %}
+      <tr><td><a href="/jogador/{{ d.jogador.id }}">{{ d.jogador.apelido }}</a></td>
+          <td>{{ d.jogos }}</td><td class="V">{{ d.vitorias }}</td>
+          <td>{{ '%.0f'|format(d.aproveitamento) }}%</td></tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<div class="vazio">Ainda não jogou ao lado de ninguém.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Fregueses</h2>
+    {% if p.fregueses %}
+    <table><thead><tr><th>Jogador</th><th>J</th><th>V</th><th>%</th></tr></thead><tbody>
+      {% for f in p.fregueses %}
+      <tr><td><a href="/jogador/{{ f.jogador.id }}">{{ f.jogador.apelido }}</a></td>
+          <td>{{ f.jogos }}</td><td class="V">{{ f.vitorias }}</td>
+          <td>{{ '%.0f'|format(f.aproveitamento) }}%</td></tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<div class="vazio">Ainda não enfrentou ninguém.</div>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Histórico</h2>
+  {% if p.historico %}
+  <table><thead><tr><th>Data</th><th>Time</th><th></th></tr></thead><tbody>
+    {% for partida, cor, resultado in p.historico %}
+    <tr>
+      <td>{{ partida.data.strftime('%d/%m/%Y') }}</td>
+      <td><span class="bola" style="background:{{ cor.codigo }}"></span>{{ cor.nome }}</td>
+      <td><span class="selo {{ resultado }}">{{ resultado }}</span></td>
+    </tr>
+    {% endfor %}
+  </tbody></table>
+  {% else %}<div class="vazio">Nenhuma quinta registrada.</div>{% endif %}
+</div>
+
+<div class="card">
+  <h2>Trocar apelido</h2>
+  <form method="post" action="/jogador/{{ p.jogador.id }}/renomear" class="linha-form">
+    <div><input name="apelido" value="{{ p.jogador.apelido }}" required></div>
+    <button type="submit">Salvar</button>
+    <span class="sub" style="margin:0;align-self:center">O histórico acompanha: ele se liga pelo id, não pelo nome.</span>
+  </form>
+</div>
+{% endblock %}

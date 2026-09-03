@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block titulo %}Lançar quinta · BagreStats{% endblock %}
+{% block conteudo %}
+<h1>Lançar quinta</h1>
+<p class="sub">Marque quem jogou de cada lado. Quem não for marcado, não jogou.</p>
+
+{% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+
+<form method="post" action="/lancar" class="card">
+  <div class="linha-form">
+    <div><label>Data</label><input type="date" name="data" value="{{ hoje }}" required></div>
+    <div><label>Resultado</label>
+      <select name="vencedor">
+        <option value="A">Venceu o time 1</option>
+        <option value="B">Venceu o time 2</option>
+        <option value="EMPATE">Empate</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="times">
+    {% for lado, padrao in [('a', 'PRETO'), ('b', 'BRANCO')] %}
+    <div class="time">
+      <h3>
+        <select name="cor_{{ lado }}" onchange="pintar(this)">
+          {% for c in cores %}
+          <option value="{{ c.id }}" data-cor="{{ c.codigo }}" {{ 'selected' if c.nome == padrao }}>{{ c.nome }}</option>
+          {% endfor %}
+        </select>
+        <span class="conta" id="conta-{{ lado }}">0</span>
+      </h3>
+      <div class="escala">
+        {% for j in jogadores %}
+        <label><input type="checkbox" name="time_{{ lado }}" value="{{ j.id }}"
+                      data-lado="{{ lado }}" data-jogador="{{ j.id }}">{{ j.apelido }}</label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top:16px"><button type="submit">Salvar quinta</button></div>
+</form>
+
+<script>
+// Marcar alguem de um lado desmarca do outro: impossivel escalar nos dois times.
+// O banco tambem recusa, mas aqui o erro nem chega a acontecer.
+document.querySelectorAll('.escala input').forEach(function (caixa) {
+  caixa.addEventListener('change', function () {
+    if (caixa.checked) {
+      document.querySelectorAll(
+        '.escala input[data-jogador="' + caixa.dataset.jogador + '"]'
+      ).forEach(function (outra) { if (outra !== caixa) outra.checked = false; });
+    }
+    contar();
+  });
+});
+function contar() {
+  ['a', 'b'].forEach(function (lado) {
+    var n = document.querySelectorAll('input[name="time_' + lado + '"]:checked').length;
+    document.getElementById('conta-' + lado).textContent = n;
+  });
+}
+function pintar(sel) {
+  sel.style.color = sel.selectedOptions[0].dataset.cor;
+}
+document.querySelectorAll('.time select').forEach(pintar);
+</script>
+{% endblock %}
