@@ -4,9 +4,8 @@ Registro do que foi decidido e **por quê**, para não reabrir discussão fechad
 
 ## Domínio
 
-Uma pelada por rodada — normalmente na quinta, mas **a data é livre e nada no
-código assume dia da semana**. Dois times, uma única partida que dura a noite
-toda. Os times são batidos no dia: **o elenco muda toda semana**.
+Uma pelada por rodada, com data livre — nada no código assume dia da semana.
+Dois times, uma única partida que dura a noite toda. Os times são batidos no dia: **o elenco muda toda semana**.
 
 Consequência central: **time não é uma entidade permanente, a cor é só a
 etiqueta daquele dia.** Por isso a estatística acumula no *jogador*, nunca no
