@@ -25,7 +25,9 @@
 
     <div class="card">
       {% if pelada.partidas %}
-        {% for jogo in pelada.partidas %}
+        {# Do jogo mais recente para o mais antigo, na mesma direcao da lista
+           de noites: o que acabou de acontecer fica por cima. #}
+        {% for jogo in pelada.partidas|reverse %}
         <a class="confronto" href="/pelada/{{ pelada.id }}">
           {{ lado(jogo.cor_a, 'E' if jogo.empate else ('V' if jogo.cor_vencedora_id == jogo.cor_a_id else 'D')) }}
           {{ lado(jogo.cor_b, 'E' if jogo.empate else ('V' if jogo.cor_vencedora_id == jogo.cor_b_id else 'D')) }}
