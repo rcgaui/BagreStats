@@ -5,18 +5,20 @@ HTML, o app de celular funciona sem que nada em stats.py mude.
 """
 import json
 from datetime import date
+from urllib.parse import quote_plus
 
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import graficos, stats
 from app.config import BASE_DIR
 from app.db import get_session
-from app.models import POSICOES, Cor, Jogador, Participacao, Partida
+from app.models import POSICOES, Cor, Jogador, Participacao, Partida, Pelada
 
 app = FastAPI(title="BagreStats")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
@@ -54,7 +56,8 @@ def classificacao(request: Request, sessao: Session = Depends(get_session)):
             "request": request,
             "pagina": "tabela",
             "tabela": stats.classificacao(sessao),
-            "total_partidas": sessao.query(Partida).count(),
+            "total_peladas": sessao.query(Pelada).count(),
+            "total_jogos": sessao.query(Partida).count(),
         },
     )
 
@@ -79,54 +82,107 @@ def form_lancar(request: Request, erro: str = "", sessao: Session = Depends(get_
     )
 
 
+class JogadorEscalado(BaseModel):
+    id: int
+    posicao: str | None = None
+
+
+class TimeDaNoite(BaseModel):
+    cor_id: int
+    jogadores: list[JogadorEscalado]
+
+
+class JogoDaNoite(BaseModel):
+    cor_a: int
+    cor_b: int
+    vencedor: int | None = None  # ausente = empate
+
+
+class Lancamento(BaseModel):
+    """O que a tela envia: a noite inteira de uma vez.
+
+    Vem como um campo JSON so, em vez de dezenas de campos paralelos: com
+    numero variavel de times e de jogos, listas paralelas ficariam faceis de
+    desalinhar sem ninguem perceber.
+    """
+
+    data: date
+    times: list[TimeDaNoite]
+    jogos: list[JogoDaNoite]
+
+
+TITULARES = 7  # vagas do campo; reservas nao contam
+
+
+def _criticar(lanc: Lancamento, sessao: Session) -> str | None:
+    """A primeira coisa errada com o lancamento, ou None se esta tudo certo."""
+    if lanc.data > date.today():
+        return "Essa data ainda nao chegou"
+    if sessao.scalar(select(Pelada).where(Pelada.data == lanc.data)):
+        return f"Ja existe pelada em {lanc.data.strftime('%d/%m/%Y')}"
+    if len(lanc.times) < 2:
+        return "A pelada precisa de pelo menos dois times"
+
+    cores = [t.cor_id for t in lanc.times]
+    if len(set(cores)) != len(cores):
+        return "Dois times estao com a mesma cor"
+
+    vistos: set[int] = set()
+    for time in lanc.times:
+        ids = [j.id for j in time.jogadores]
+        if vistos & set(ids):
+            return "Tem jogador escalado em mais de um time"
+        vistos |= set(ids)
+        if sum(1 for j in time.jogadores if j.posicao != "RES") < TITULARES:
+            return f"Todo time precisa de {TITULARES} titulares"
+
+    if not lanc.jogos:
+        return "Registre pelo menos um jogo da noite"
+    for i, jogo in enumerate(lanc.jogos, start=1):
+        if jogo.cor_a == jogo.cor_b:
+            return f"O jogo {i} esta com a mesma cor dos dois lados"
+        if jogo.cor_a not in cores or jogo.cor_b not in cores:
+            return f"O jogo {i} usa uma cor que nao jogou nesta pelada"
+        if jogo.vencedor is not None and jogo.vencedor not in (jogo.cor_a, jogo.cor_b):
+            return f"O vencedor do jogo {i} nao e um dos times que jogaram"
+    return None
+
+
 @app.post("/lancar")
-def salvar_pelada(
-    data: str = Form(...),
-    cor_a: int = Form(...),
-    cor_b: int = Form(...),
-    vencedor: str = Form(...),
-    time_a: list[int] = Form(default=[]),
-    time_b: list[int] = Form(default=[]),
-    # Paralelas a time_a/time_b: posicoes_a[i] eh a vaga de time_a[i].
-    # A tela sempre envia os dois pares juntos, na mesma ordem.
-    posicoes_a: list[str] = Form(default=[]),
-    posicoes_b: list[str] = Form(default=[]),
-    sessao: Session = Depends(get_session),
-):
-    dia = date.fromisoformat(data)
+def salvar_pelada(dados: str = Form(...), sessao: Session = Depends(get_session)):
+    try:
+        lanc = Lancamento.model_validate_json(dados)
+    except ValidationError:
+        return RedirectResponse("/lancar?erro=Nao+entendi+os+dados+enviados", 303)
 
-    # Validacoes na camada web: mensagem amigavel antes de o banco reclamar.
-    # Pelada que ainda nao aconteceu nao existe. O calendario ja apaga datas
-    # futuras, mas a regra tem de valer aqui: o navegador nao e confiavel.
-    if dia > date.today():
-        return RedirectResponse("/lancar?erro=Essa+data+ainda+nao+chegou", 303)
-    if cor_a == cor_b:
-        return RedirectResponse("/lancar?erro=Os+dois+times+estao+com+a+mesma+cor", 303)
-    repetidos = set(time_a) & set(time_b)
-    if repetidos:
-        return RedirectResponse("/lancar?erro=Tem+jogador+escalado+nos+dois+times", 303)
-    if not time_a or not time_b:
-        return RedirectResponse("/lancar?erro=Os+dois+times+precisam+de+jogadores", 303)
-    if sessao.scalar(select(Partida).where(Partida.data == dia)):
-        return RedirectResponse(f"/lancar?erro=Ja+existe+partida+em+{dia}", 303)
+    # As regras valem aqui, nao so na tela: o navegador nao e barreira de
+    # confianca, e uma pelada torta contamina a estatistica inteira.
+    if problema := _criticar(lanc, sessao):
+        return RedirectResponse(f"/lancar?erro={quote_plus(problema)}", 303)
 
-    vencedora = {"A": cor_a, "B": cor_b}.get(vencedor)  # ausente = empate
-    partida = Partida(data=dia, cor_vencedora_id=vencedora)
-    sessao.add(partida)
+    pelada = Pelada(data=lanc.data)
+    sessao.add(pelada)
     sessao.flush()
-    for ids, posicoes, cor in (
-        (time_a, posicoes_a, cor_a),
-        (time_b, posicoes_b, cor_b),
-    ):
-        for jogador_id, posicao in zip(ids, posicoes):
+    for time in lanc.times:
+        for jogador in time.jogadores:
             sessao.add(
                 Participacao(
-                    partida_id=partida.id,
-                    jogador_id=jogador_id,
-                    cor_id=cor,
-                    posicao=posicao or None,
+                    pelada_id=pelada.id,
+                    jogador_id=jogador.id,
+                    cor_id=time.cor_id,
+                    posicao=jogador.posicao or None,
                 )
             )
+    for ordem, jogo in enumerate(lanc.jogos, start=1):
+        sessao.add(
+            Partida(
+                pelada_id=pelada.id,
+                ordem=ordem,
+                cor_a_id=jogo.cor_a,
+                cor_b_id=jogo.cor_b,
+                cor_vencedora_id=jogo.vencedor,
+            )
+        )
     sessao.commit()
     return RedirectResponse("/", 303)
 

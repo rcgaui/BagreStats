@@ -2,128 +2,109 @@
 {% block titulo %}Lançar pelada · BagreStats{% endblock %}
 {% block conteudo %}
 <h1>Lançar pelada</h1>
-<p class="sub">Escolha a cor de cada time e clique para escalar quem jogou.</p>
+<p class="sub">Monte os times, escale quem jogou e registre os jogos da noite.</p>
 
 {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 
 <form method="post" action="/lancar" id="form-pelada">
-  <div class="card" style="padding:18px">
-    <label>Data</label>
-    <!-- Calendario proprio: o do input[type=date] tambem e do navegador. -->
-    <div class="seletor calendario-campo" data-calendario>
-      <input type="hidden" name="data" value="{{ hoje }}" required>
-      <button type="button" class="gatilho" aria-haspopup="dialog" aria-expanded="false">
-        <svg class="icone" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
-          <rect x="1.5" y="3" width="13" height="11.5" rx="2" fill="none"
-                stroke="currentColor" stroke-width="1.4"/>
-          <path d="M1.5 6.5h13M5 1.5v3M11 1.5v3" stroke="currentColor"
-                stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-        <span class="valor" data-data-valor></span>
-        <svg class="seta" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">
-          <path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor"
-                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="menu cal" hidden>
-        <div class="cal-topo">
-          <button type="button" class="cal-nav" data-mes="-1" aria-label="Mês anterior">
-            <svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><path d="M6.5 1 1.5 6l5 5"
-              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-              stroke-linejoin="round"/></svg>
-          </button>
-          <span class="cal-titulo" data-cal-titulo></span>
-          <button type="button" class="cal-nav" data-mes="1" aria-label="Próximo mês">
-            <svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><path d="M1.5 1l5 5-5 5"
-              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-              stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-        <div class="cal-semana"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
-        <div class="cal-dias" data-cal-dias></div>
-        <p class="cal-recado" data-cal-recado hidden></p>
-      </div>
-    </div>
-  </div>
+  <!-- A tela envia a noite inteira num campo JSON: com numero variavel de
+       times e jogos, dezenas de campos paralelos desalinhariam sem aviso. -->
+  <input type="hidden" name="dados" id="dados">
 
-  <!-- Tudo daqui pra baixo, ate o botao de salvar, some enquanto um time esta
-       sendo escalado (Q3: um time por vez, o editor toma o lugar disto). -->
   <div id="tela-resumo">
-    <div class="resumo-times">
-      {% for lado, padrao in [('a', 'PRETO'), ('b', 'BRANCO')] %}
-      <div class="cartao-time">
-        <div class="titulo">
-          <b><span class="bola" data-bola="{{ lado }}"></span>Time {{ 'A' if lado == 'a' else 'B' }}</b>
-        </div>
-        <!-- Seletor proprio: o painel que o <select> nativo abre e desenhado
-             pelo sistema operacional e nao aceita estilo nenhum. -->
-        <div class="seletor" data-seletor="{{ lado }}">
-          <input type="hidden" name="cor_{{ lado }}"
-                 value="{% for c in cores %}{{ c.id if c.nome == padrao }}{% endfor %}">
-          <button type="button" class="gatilho" aria-haspopup="listbox" aria-expanded="false"
-                  aria-label="Cor do time {{ 'A' if lado == 'a' else 'B' }}">
-            <span class="bola" data-gatilho-bola></span>
-            <span class="valor" data-gatilho-valor></span>
-            <svg class="seta" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">
-              <path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor"
-                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-          <div class="menu" role="listbox" hidden>
-            {% for c in cores %}
-            <button type="button" role="option" data-valor="{{ c.id }}"
-                    data-cor="{{ c.codigo }}" data-nome="{{ c.nome }}">
-              <span class="bola" style="background:{{ c.codigo }}"></span>
-              <span class="nome">{{ c.nome }}</span>
-              <svg class="check" width="13" height="10" viewBox="0 0 13 10" aria-hidden="true">
-                <path d="M1 5l4 4 7-8" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+    <div class="card" style="padding:18px">
+      <label>Data</label>
+      <!-- Calendario proprio: o do input[type=date] e desenhado pelo navegador. -->
+      <div class="seletor calendario-campo" data-calendario>
+        <button type="button" class="gatilho" aria-haspopup="dialog" aria-expanded="false">
+          <svg class="icone" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="1.5" y="3" width="13" height="11.5" rx="2" fill="none"
+                  stroke="currentColor" stroke-width="1.4"/>
+            <path d="M1.5 6.5h13M5 1.5v3M11 1.5v3" stroke="currentColor"
+                  stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <span class="valor" data-data-valor></span>
+          <svg class="seta" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">
+            <path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor"
+                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="menu cal" hidden>
+          <div class="cal-topo">
+            <button type="button" class="cal-nav" data-mes="-1" aria-label="Mês anterior">
+              <svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><path d="M6.5 1 1.5 6l5 5"
+                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round"/></svg>
             </button>
-            {% endfor %}
+            <span class="cal-titulo" data-cal-titulo></span>
+            <button type="button" class="cal-nav" data-mes="1" aria-label="Próximo mês">
+              <svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><path d="M1.5 1l5 5-5 5"
+                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round"/></svg>
+            </button>
           </div>
+          <div class="cal-semana"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+          <div class="cal-dias" data-cal-dias></div>
+          <p class="cal-recado" data-cal-recado hidden></p>
         </div>
-        <div class="conta" data-resumo="{{ lado }}"><b>0</b> escalados</div>
-        <button type="button" class="fraco" data-abrir="{{ lado }}">Editar escalação →</button>
       </div>
-      {% endfor %}
     </div>
 
-    <div class="card" style="padding:18px">
-      <label>Resultado</label>
-      <div class="segmentado" id="segmentado-resultado">
-        <input type="radio" id="venceu-a" name="vencedor" value="A" checked>
-        <label for="venceu-a">Time A</label>
-        <input type="radio" id="venceu-e" name="vencedor" value="EMPATE">
-        <label for="venceu-e">Empate</label>
-        <input type="radio" id="venceu-b" name="vencedor" value="B">
-        <label for="venceu-b">Time B</label>
+    <div class="card">
+      <h2>Times da noite</h2>
+      <div class="resumo-times" id="lista-times"></div>
+      <div class="rodape-card">
+        <button type="button" class="fraco" id="add-time">+ Adicionar time</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Jogos da noite</h2>
+      <div id="lista-jogos"></div>
+      <div class="rodape-card">
+        <button type="button" class="fraco" id="add-jogo">+ Adicionar jogo</button>
       </div>
     </div>
 
     <div class="linha-salvar">
       <button type="submit">Salvar pelada</button>
-      <p class="aviso" id="aviso-salvar">Escale os 7 titulares dos dois times para salvar.</p>
+      <p class="aviso" id="aviso-salvar" hidden></p>
     </div>
   </div>
 
   <!-- Editor de escalação de um time: o campinho com as vagas fixas + reservas. -->
-  {% for lado in ['a', 'b'] %}
-  <div class="editor-time" id="editor-{{ lado }}" hidden>
+  <div class="editor-time" id="editor" hidden>
     <div class="topo-editor">
-      <h2>Escalação — Time {{ 'A' if lado == 'a' else 'B' }}</h2>
-      <button type="button" class="fraco" data-voltar>← Voltar</button>
+      <h2 id="editor-titulo"></h2>
+      <button type="button" class="fraco" id="editor-voltar">← Voltar</button>
     </div>
-    <div class="campo" id="campo-{{ lado }}"></div>
+    <div class="campo" id="campo">
+      <!-- Linhas do campo. O gol do time fica EMBAIXO, do mesmo lado do
+           goleiro: e a visao de quem escala o proprio time. -->
+      <svg class="linhas" viewBox="0 0 75 100" aria-hidden="true">
+        <rect x="3" y="5" width="69" height="90" stroke/>
+        <line x1="3" y1="50" x2="72" y2="50" stroke/>
+        <circle cx="37.5" cy="50" r="9" stroke/>
+        <circle cx="37.5" cy="50" r="0.9" data-cheio/>
+
+        <rect x="17" y="79" width="41" height="16" stroke/>
+        <rect x="28.5" y="88.5" width="18" height="6.5" stroke/>
+        <circle cx="37.5" cy="85" r="0.9" data-cheio/>
+        <path d="M31.1 79a9 9 0 0 0 12.8 0" stroke/>
+        <rect x="30.5" y="95" width="14" height="2.6" data-gol/>
+
+        <rect x="17" y="5" width="41" height="16" stroke/>
+        <rect x="28.5" y="5" width="18" height="6.5" stroke/>
+        <circle cx="37.5" cy="15" r="0.9" data-cheio/>
+        <path d="M31.1 21a9 9 0 0 1 12.8 0" stroke/>
+        <rect x="30.5" y="2.4" width="14" height="2.6" data-gol/>
+      </svg>
+    </div>
     <div class="reservas">
       <div class="rotulo-secao">Reservas</div>
-      <div class="lista-reservas" id="reservas-{{ lado }}"></div>
+      <div class="lista-reservas" id="reservas"></div>
     </div>
   </div>
-  {% endfor %}
-
-  <div id="campos-a"></div>
-  <div id="campos-b"></div>
 </form>
 
 <!-- Popup de escolha de jogador para uma vaga -->
@@ -142,193 +123,365 @@
 </div>
 
 <script id="dados-jogadores" type="application/json">{{ jogadores_json|safe }}</script>
+<script id="dados-cores" type="application/json">
+  [{% for c in cores %}{"id":{{ c.id }},"nome":"{{ c.nome }}","codigo":"{{ c.codigo }}"}{{ "," if not loop.last }}{% endfor %}]
+</script>
 <script>
 (function () {
   "use strict";
   const jogadores = JSON.parse(document.getElementById("dados-jogadores").textContent);
+  const cores = JSON.parse(document.getElementById("dados-cores").textContent);
+  const corPorId = Object.fromEntries(cores.map((c) => [c.id, c]));
 
-  // Formacao fixa (Q4). Ordem = ordem de preenchimento automatico.
+  // Formacao fixa. Ordem = ordem de preenchimento automatico.
   const POSICOES = [
     ["GOL", "Goleiro"], ["ZAG", "Zagueiro"],
     ["LAT_E", "Lateral esq."], ["LAT_D", "Lateral dir."],
     ["MEI_E", "Meio esq."], ["MEI_D", "Meio dir."],
     ["ATA", "Atacante"],
   ];
-  // Coordenadas no campinho, em % (so visual, o backend nao sabe disso).
+  // Coordenadas no campinho, em % (so visual; o backend nao sabe disso).
   const COORD = {
-    ATA: [50, 14], MEI_E: [28, 36], MEI_D: [72, 36],
-    LAT_E: [16, 58], LAT_D: [84, 58], ZAG: [50, 76], GOL: [50, 92],
+    ATA: [50, 17], MEI_E: [29, 37], MEI_D: [71, 37],
+    LAT_E: [15, 57], LAT_D: [85, 57], ZAG: [50, 71], GOL: [50, 86],
+  };
+  const TITULARES = POSICOES.length;
+
+  const timeNovo = (corId) => ({
+    corId,
+    campo: Object.fromEntries(POSICOES.map(([c]) => [c, null])),
+    reservas: [null, null],
+  });
+
+  const estado = {
+    data: new Date().toISOString().slice(0, 10),
+    times: [timeNovo(cores.find((c) => c.nome === "PRETO")?.id ?? cores[0].id),
+            timeNovo(cores.find((c) => c.nome === "BRANCO")?.id ?? cores[1].id)],
+    jogos: [],
   };
 
-  const estados = {
-    a: { campo: {}, reservas: [null, null] },
-    b: { campo: {}, reservas: [null, null] },
-  };
-  for (const lado of ["a", "b"]) {
-    for (const [codigo] of POSICOES) estados[lado].campo[codigo] = null;
-  }
+  let editando = null;   // indice do time aberto no editor
+  let popupAlvo = null;  // {time, tipo:'campo'|'reserva', chave}
 
-  let popupAlvo = null; // { lado, tipo: 'campo'|'reserva', chave }
+  const nomeDe = (id) => jogadores.find((j) => j.id === id)?.apelido ?? "?";
+  const letra = (i) => String.fromCharCode(65 + i);
+  const emCampo = (t) => Object.values(t.campo).filter(Boolean).length;
+  const escalados = (t) => emCampo(t) + t.reservas.filter(Boolean).length;
 
   function idsOcupados(excluir) {
     const ids = new Set();
-    for (const lado of ["a", "b"]) {
-      const est = estados[lado];
-      for (const [codigo] of POSICOES) {
-        const val = est.campo[codigo];
-        const eEsse = excluir && excluir.lado === lado && excluir.tipo === "campo" && excluir.chave === codigo;
-        if (val && !eEsse) ids.add(val);
-      }
-      est.reservas.forEach((val, i) => {
-        const eEsse = excluir && excluir.lado === lado && excluir.tipo === "reserva" && excluir.chave === i;
-        if (val && !eEsse) ids.add(val);
+    estado.times.forEach((t, ti) => {
+      POSICOES.forEach(([codigo]) => {
+        const v = t.campo[codigo];
+        const esse = excluir && excluir.time === ti && excluir.tipo === "campo" && excluir.chave === codigo;
+        if (v && !esse) ids.add(v);
       });
-    }
+      t.reservas.forEach((v, i) => {
+        const esse = excluir && excluir.time === ti && excluir.tipo === "reserva" && excluir.chave === i;
+        if (v && !esse) ids.add(v);
+      });
+    });
     return ids;
   }
 
-  function nomeDe(id) {
-    const j = jogadores.find((j) => j.id === id);
-    return j ? j.apelido : "?";
+  // ---------------------------------------------------------- seletor de cor
+  // Componente proprio: o painel do <select> nativo e desenhado pelo sistema
+  // operacional e nao aceita estilo nenhum.
+  function seletorDeCor(valorAtual, bloqueadas, aoEscolher) {
+    const raiz = document.createElement("div");
+    raiz.className = "seletor";
+    const atual = corPorId[valorAtual];
+    raiz.innerHTML =
+      '<button type="button" class="gatilho" aria-haspopup="listbox">' +
+        '<span class="bola" style="background:' + (atual?.codigo ?? "#888") + '"></span>' +
+        '<span class="valor">' + (atual?.nome ?? "—") + "</span>" +
+        '<svg class="seta" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">' +
+        '<path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor" stroke-width="1.8"' +
+        ' stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+      '<div class="menu" role="listbox" hidden></div>';
+
+    const menu = raiz.querySelector(".menu");
+    for (const c of cores) {
+      const op = document.createElement("button");
+      op.type = "button";
+      op.setAttribute("role", "option");
+      op.disabled = bloqueadas.includes(c.id) && c.id !== valorAtual;
+      if (op.disabled) op.title = "Já é a cor de outro time";
+      op.innerHTML =
+        '<span class="bola" style="background:' + c.codigo + '"></span>' +
+        '<span class="nome">' + c.nome + "</span>" +
+        '<svg class="check" width="13" height="10" viewBox="0 0 13 10" aria-hidden="true">' +
+        '<path d="M1 5l4 4 7-8" fill="none" stroke="currentColor" stroke-width="2"' +
+        ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      if (c.id === valorAtual) op.classList.add("marcado");
+      op.addEventListener("click", () => { fecharMenus(null); aoEscolher(c.id); });
+      menu.appendChild(op);
+    }
+    raiz.querySelector(".gatilho").addEventListener("click", () => {
+      const abrindo = menu.hidden;
+      fecharMenus(raiz);
+      menu.hidden = !abrindo;
+      raiz.classList.toggle("aberto", abrindo);
+    });
+    return raiz;
   }
 
-  function proximaVagaVazia(lado) {
-    const est = estados[lado];
-    for (const [codigo] of POSICOES) {
-      if (!est.campo[codigo]) return { lado, tipo: "campo", chave: codigo };
+  function fecharMenus(exceto) {
+    document.querySelectorAll(".seletor").forEach((s) => {
+      if (s === exceto) return;
+      const m = s.querySelector(".menu");
+      if (m) m.hidden = true;
+      s.classList.remove("aberto");
+      s.querySelector(".gatilho")?.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  // ------------------------------------------------------------------ times
+  function renderTimes() {
+    const lista = document.getElementById("lista-times");
+    lista.innerHTML = "";
+    const usadas = estado.times.map((t) => t.corId);
+
+    estado.times.forEach((time, i) => {
+      const cor = corPorId[time.corId];
+      const cartao = document.createElement("div");
+      cartao.className = "cartao-time";
+      cartao.innerHTML =
+        '<div class="titulo"><b><span class="bola" style="background:' + cor.codigo +
+        '"></span>Time ' + letra(i) + "</b></div>";
+
+      cartao.appendChild(
+        seletorDeCor(time.corId, usadas, (novaCor) => {
+          time.corId = novaCor;
+          // Jogo que usava a cor antiga passa a apontar para a nova.
+          renderTudo();
+        })
+      );
+
+      const conta = document.createElement("div");
+      conta.className = "conta";
+      conta.innerHTML =
+        "<b>" + escalados(time) + "</b> escalado" + (escalados(time) === 1 ? "" : "s") +
+        " · " + emCampo(time) + "/" + TITULARES + " em campo";
+      cartao.appendChild(conta);
+
+      const editar = document.createElement("button");
+      editar.type = "button";
+      editar.className = "fraco";
+      editar.textContent = "Editar escalação →";
+      editar.addEventListener("click", () => abrirEditor(i));
+      cartao.appendChild(editar);
+
+      if (estado.times.length > 2) {
+        const tirar = document.createElement("button");
+        tirar.type = "button";
+        tirar.className = "so-texto perigo";
+        tirar.textContent = "Remover time";
+        tirar.addEventListener("click", () => {
+          const cor = estado.times[i].corId;
+          estado.times.splice(i, 1);
+          // Jogo que dependia deste time deixa de fazer sentido.
+          estado.jogos = estado.jogos.filter((j) => j.corA !== cor && j.corB !== cor);
+          renderTudo();
+        });
+        cartao.appendChild(tirar);
+      }
+      lista.appendChild(cartao);
+    });
+
+    // So da para acrescentar time enquanto sobrar cor livre.
+    document.getElementById("add-time").disabled = estado.times.length >= cores.length;
+  }
+
+  // ------------------------------------------------------------------ jogos
+  function renderJogos() {
+    const lista = document.getElementById("lista-jogos");
+    lista.innerHTML = "";
+    if (!estado.jogos.length) {
+      lista.innerHTML =
+        '<div class="vazio">Nenhum jogo ainda. Acrescente os jogos que rolaram na noite.</div>';
+      return;
     }
-    for (let i = 0; i < est.reservas.length; i++) {
-      if (!est.reservas[i]) return { lado, tipo: "reserva", chave: i };
+    const usadas = estado.times.map((t) => t.corId);
+
+    estado.jogos.forEach((jogo, i) => {
+      const linha = document.createElement("div");
+      linha.className = "jogo";
+      const ordem = document.createElement("span");
+      ordem.className = "ordem";
+      ordem.textContent = i + 1;
+      linha.appendChild(ordem);
+
+      const lados = document.createElement("div");
+      lados.className = "jogo-lados";
+      lados.appendChild(
+        seletorDeCor(jogo.corA, [jogo.corB], (c) => {
+          jogo.corA = c;
+          if (jogo.vencedor !== null && ![jogo.corA, jogo.corB].includes(jogo.vencedor)) {
+            jogo.vencedor = null;  // o vencedor antigo saiu do jogo
+          }
+          renderTudo();
+        })
+      );
+      const x = document.createElement("span");
+      x.className = "versus";
+      x.textContent = "×";
+      lados.appendChild(x);
+      lados.appendChild(
+        seletorDeCor(jogo.corB, [jogo.corA], (c) => {
+          jogo.corB = c;
+          if (jogo.vencedor !== null && ![jogo.corA, jogo.corB].includes(jogo.vencedor)) {
+            jogo.vencedor = null;
+          }
+          renderTudo();
+        })
+      );
+      linha.appendChild(lados);
+
+      // Vencedor: os dois nomes de cor e o empate no meio.
+      const venc = document.createElement("div");
+      venc.className = "segmentado";
+      for (const [valor, texto] of [
+        [jogo.corA, corPorId[jogo.corA].nome],
+        [null, "Empate"],
+        [jogo.corB, corPorId[jogo.corB].nome],
+      ]) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "seg" + (jogo.vencedor === valor ? " marcado" : "");
+        b.textContent = texto;
+        b.addEventListener("click", () => { jogo.vencedor = valor; renderTudo(); });
+        venc.appendChild(b);
+      }
+      linha.appendChild(venc);
+
+      const tirar = document.createElement("button");
+      tirar.type = "button";
+      tirar.className = "so-texto perigo";
+      tirar.setAttribute("aria-label", "Remover o jogo " + (i + 1));
+      tirar.textContent = "×";
+      tirar.addEventListener("click", () => { estado.jogos.splice(i, 1); renderTudo(); });
+      linha.appendChild(tirar);
+
+      lista.appendChild(linha);
+    });
+    void usadas;
+  }
+
+  document.getElementById("add-time").addEventListener("click", () => {
+    const livre = cores.find((c) => !estado.times.some((t) => t.corId === c.id));
+    if (livre) { estado.times.push(timeNovo(livre.id)); renderTudo(); }
+  });
+
+  document.getElementById("add-jogo").addEventListener("click", () => {
+    // Rodizio comum de pelada: quem venceu fica, quem sentou entra. Quando
+    // isso nao se aplica, os dois primeiros times sao um palpite tao bom
+    // quanto qualquer outro - e trocar custa um clique.
+    const ultimo = estado.jogos[estado.jogos.length - 1];
+    let a = estado.times[0].corId, b = estado.times[1].corId;
+    if (ultimo && estado.times.length > 2) {
+      const sentou = estado.times.find(
+        (t) => t.corId !== ultimo.corA && t.corId !== ultimo.corB
+      );
+      if (sentou) {
+        a = ultimo.vencedor ?? ultimo.corA;
+        b = sentou.corId;
+      }
+    }
+    estado.jogos.push({ corA: a, corB: b, vencedor: null });
+    renderTudo();
+  });
+
+  // --------------------------------------------------------------- editor
+  function abrirEditor(i) {
+    editando = i;
+    document.getElementById("tela-resumo").hidden = true;
+    document.getElementById("editor").hidden = false;
+    const cor = corPorId[estado.times[i].corId];
+    document.getElementById("editor-titulo").innerHTML =
+      '<span class="bola" style="background:' + cor.codigo + '"></span>Time ' +
+      letra(i) + " — " + cor.nome;
+    renderCampo();
+    renderReservas();
+  }
+
+  function fecharEditor() {
+    editando = null;
+    document.getElementById("editor").hidden = true;
+    document.getElementById("tela-resumo").hidden = false;
+    renderTudo();
+  }
+
+  function renderCampo() {
+    const campo = document.getElementById("campo");
+    // Remove so as vagas: innerHTML="" apagaria o SVG das linhas do campo.
+    campo.querySelectorAll(".vaga").forEach((v) => v.remove());
+    const time = estado.times[editando];
+    for (const [codigo, rotulo] of POSICOES) {
+      const [x, y] = COORD[codigo];
+      const id = time.campo[codigo];
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "vaga" + (id ? " ocupada" : "");
+      b.style.left = x + "%";
+      b.style.top = y + "%";
+      b.setAttribute("aria-label", rotulo + (id ? ": " + nomeDe(id) : ": vazia"));
+      b.innerHTML =
+        '<span class="bolha">' + (id ? nomeDe(id).slice(0, 2).toUpperCase() : "+") + "</span>" +
+        (id ? '<span class="rotulo">' + nomeDe(id) + "</span>" : "");
+      b.addEventListener("click", () =>
+        abrirPopup({ time: editando, tipo: "campo", chave: codigo }, rotulo)
+      );
+      campo.appendChild(b);
+    }
+  }
+
+  function renderReservas() {
+    const lista = document.getElementById("reservas");
+    lista.innerHTML = "";
+    const time = estado.times[editando];
+    time.reservas.forEach((id, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "vaga" + (id ? " ocupada" : "");
+      b.setAttribute("aria-label", "Reserva " + (i + 1) + (id ? ": " + nomeDe(id) : ": vazia"));
+      b.innerHTML =
+        '<span class="bolha">' + (id ? nomeDe(id).slice(0, 2).toUpperCase() : "+") + "</span>" +
+        (id ? '<span class="rotulo">' + nomeDe(id) + "</span>" : "");
+      b.addEventListener("click", () =>
+        abrirPopup({ time: editando, tipo: "reserva", chave: i }, "Reserva " + (i + 1))
+      );
+      lista.appendChild(b);
+    });
+    // Acrescentar vaga e uma acao diferente de escalar alguem: botao com
+    // texto, nunca outra bolinha.
+    const mais = document.createElement("button");
+    mais.type = "button";
+    mais.className = "fraco add-reserva";
+    mais.textContent = "+ Vaga";
+    mais.addEventListener("click", () => { time.reservas.push(null); renderReservas(); });
+    lista.appendChild(mais);
+  }
+
+  // ---------------------------------------------------------------- popup
+  function proximaVagaVazia(ti) {
+    const t = estado.times[ti];
+    for (const [codigo] of POSICOES) {
+      if (!t.campo[codigo]) return { time: ti, tipo: "campo", chave: codigo };
+    }
+    for (let i = 0; i < t.reservas.length; i++) {
+      if (!t.reservas[i]) return { time: ti, tipo: "reserva", chave: i };
     }
     return null;
   }
 
-  function renderCampo(lado) {
-    const container = document.getElementById("campo-" + lado);
-    container.innerHTML = "";
-    for (const [codigo, rotulo] of POSICOES) {
-      const [x, y] = COORD[codigo];
-      const id = estados[lado].campo[codigo];
-      const ocupada = !!id;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "vaga" + (ocupada ? " ocupada" : "");
-      btn.style.left = x + "%";
-      btn.style.top = y + "%";
-      btn.setAttribute(
-        "aria-label",
-        rotulo + (ocupada ? ": " + nomeDe(id) : ": vazia, clique para escalar")
-      );
-      btn.innerHTML =
-        '<span class="bolha">' + (ocupada ? nomeDe(id).slice(0, 2).toUpperCase() : "+") + "</span>" +
-        '<span class="rotulo">' + (ocupada ? nomeDe(id) : rotulo) + "</span>";
-      btn.addEventListener("click", () => abrirPopup({ lado, tipo: "campo", chave: codigo }, rotulo));
-      container.appendChild(btn);
-    }
-  }
-
-  function renderReservas(lado) {
-    const container = document.getElementById("reservas-" + lado);
-    container.innerHTML = "";
-    estados[lado].reservas.forEach((id, i) => {
-      const ocupada = !!id;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "vaga" + (ocupada ? " ocupada" : "");
-      btn.setAttribute(
-        "aria-label",
-        "Reserva " + (i + 1) + (ocupada ? ": " + nomeDe(id) : ": vazia, clique para escalar")
-      );
-      btn.innerHTML =
-        '<span class="bolha">' + (ocupada ? nomeDe(id).slice(0, 2).toUpperCase() : "+") + "</span>" +
-        '<span class="rotulo">' + (ocupada ? nomeDe(id) : "Reserva") + "</span>";
-      btn.addEventListener("click", () => abrirPopup({ lado, tipo: "reserva", chave: i }, "Reserva " + (i + 1)));
-      container.appendChild(btn);
-    });
-    const mais = document.createElement("button");
-    mais.type = "button";
-    mais.className = "vaga add-reserva";
-    mais.setAttribute("aria-label", "Adicionar mais uma vaga de reserva");
-    mais.innerHTML = '<span class="bolha">+</span><span class="rotulo">Adicionar</span>';
-    mais.addEventListener("click", () => {
-      estados[lado].reservas.push(null);
-      renderReservas(lado);
-    });
-    container.appendChild(mais);
-  }
-
-  function atualizarResumo(lado) {
-    const est = estados[lado];
-    const noCampo = Object.values(est.campo).filter(Boolean).length;
-    const reservasOcupadas = est.reservas.filter(Boolean).length;
-    const total = noCampo + reservasOcupadas;
-    document.querySelector('[data-resumo="' + lado + '"]').innerHTML =
-      "<b>" + total + "</b> escalado" + (total === 1 ? "" : "s") +
-      " · " + noCampo + "/7 em campo";
-  }
-
-  function sincronizarInputs() {
-    for (const lado of ["a", "b"]) {
-      const container = document.getElementById("campos-" + lado);
-      const pares = [];
-      for (const [codigo] of POSICOES) {
-        const id = estados[lado].campo[codigo];
-        if (id) pares.push([id, codigo]);
-      }
-      estados[lado].reservas.forEach((id) => { if (id) pares.push([id, "RES"]); });
-      container.innerHTML = pares
-        .map(
-          ([id, pos]) =>
-            '<input type="hidden" name="time_' + lado + '" value="' + id + '">' +
-            '<input type="hidden" name="posicoes_' + lado + '" value="' + pos + '">'
-        )
-        .join("");
-    }
-    atualizarResumo("a");
-    atualizarResumo("b");
-    atualizarTrava();
-  }
-
-  const TITULARES = 7; // as vagas do campo; reservas nao contam
-
-  function emCampo(lado) {
-    return Object.values(estados[lado].campo).filter(Boolean).length;
-  }
-
-  // O resultado pode ser escolhido a qualquer momento - o que nao pode e
-  // SALVAR uma pelada com time pela metade. Entao a trava fica so no botao.
-  function atualizarTrava() {
-    const liberado = emCampo("a") >= TITULARES && emCampo("b") >= TITULARES;
-    document.querySelector('#form-pelada button[type="submit"]').disabled = !liberado;
-    document.getElementById("aviso-salvar").hidden = liberado;
-  }
-
-  function abrirEditor(lado) {
-    document.getElementById("tela-resumo").hidden = true;
-    for (const outro of ["a", "b"]) {
-      document.getElementById("editor-" + outro).hidden = outro !== lado;
-    }
-    renderCampo(lado);
-    renderReservas(lado);
-  }
-
-  function mostrarResumo() {
-    document.getElementById("tela-resumo").hidden = false;
-    document.getElementById("editor-a").hidden = true;
-    document.getElementById("editor-b").hidden = true;
-    sincronizarInputs();
-  }
-
   function abrirPopup(alvo, rotulo) {
     popupAlvo = alvo;
-    const est = estados[alvo.lado];
-    const atual = alvo.tipo === "campo" ? est.campo[alvo.chave] : est.reservas[alvo.chave];
-
+    const t = estado.times[alvo.time];
+    const atual = alvo.tipo === "campo" ? t.campo[alvo.chave] : t.reservas[alvo.chave];
     document.getElementById("popup-titulo").textContent =
-      "Time " + alvo.lado.toUpperCase() + " · " + rotulo;
-    const removerBtn = document.getElementById("popup-remover");
-    removerBtn.hidden = !atual;
-
+      "Time " + letra(alvo.time) + " · " + rotulo;
+    document.getElementById("popup-remover").hidden = !atual;
     const busca = document.getElementById("popup-busca");
     busca.value = "";
     renderListaPopup("");
@@ -338,55 +491,48 @@
 
   function renderListaPopup(termo) {
     const ocupados = idsOcupados(popupAlvo);
-    const disponiveis = jogadores.filter(
+    const livres = jogadores.filter(
       (j) => !ocupados.has(j.id) && j.apelido.toLowerCase().includes(termo.toLowerCase())
     );
     const lista = document.getElementById("popup-lista");
-    if (!disponiveis.length) {
+    lista.innerHTML = "";
+    if (!livres.length) {
       lista.innerHTML = '<div class="vazio">Nenhum jogador disponível.</div>';
       return;
     }
-    lista.innerHTML = "";
-    for (const j of disponiveis) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = j.apelido;
-      btn.addEventListener("click", () => escolherJogador(j.id));
-      lista.appendChild(btn);
+    for (const j of livres) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = j.apelido;
+      b.addEventListener("click", () => escolherJogador(j.id));
+      lista.appendChild(b);
     }
   }
 
   function escolherJogador(id) {
-    // fecharPopup() zera popupAlvo, entao o lado precisa ser guardado ANTES.
-    const { lado, tipo, chave } = popupAlvo;
-    const est = estados[lado];
-    if (tipo === "campo") est.campo[chave] = id;
-    else est.reservas[chave] = id;
+    // fecharPopup() zera popupAlvo, entao o alvo e guardado ANTES.
+    const { time, tipo, chave } = popupAlvo;
+    const t = estado.times[time];
+    if (tipo === "campo") t.campo[chave] = id; else t.reservas[chave] = id;
     fecharPopup();
-    renderCampo(lado);
-    renderReservas(lado);
-    sincronizarInputs();
-
-    // Avanco automatico: abre a proxima vaga vazia direto.
-    const proxima = proximaVagaVazia(lado);
+    renderCampo();
+    renderReservas();
+    const proxima = proximaVagaVazia(time);
     if (proxima) {
-      const rotulo =
-        proxima.tipo === "campo"
-          ? POSICOES.find((p) => p[0] === proxima.chave)[1]
-          : "Reserva " + (proxima.chave + 1);
+      const rotulo = proxima.tipo === "campo"
+        ? POSICOES.find((p) => p[0] === proxima.chave)[1]
+        : "Reserva " + (proxima.chave + 1);
       abrirPopup(proxima, rotulo);
     }
   }
 
   function removerJogador() {
-    const { lado, tipo, chave } = popupAlvo;  // guardado antes de fecharPopup()
-    const est = estados[lado];
-    if (tipo === "campo") est.campo[chave] = null;
-    else est.reservas[chave] = null;
+    const { time, tipo, chave } = popupAlvo;
+    const t = estado.times[time];
+    if (tipo === "campo") t.campo[chave] = null; else t.reservas[chave] = null;
     fecharPopup();
-    renderCampo(lado);
-    renderReservas(lado);
-    sincronizarInputs();
+    renderCampo();
+    renderReservas();
   }
 
   function fecharPopup() {
@@ -394,143 +540,50 @@
     popupAlvo = null;
   }
 
-  document.querySelectorAll("[data-abrir]").forEach((btn) =>
-    btn.addEventListener("click", () => abrirEditor(btn.dataset.abrir))
-  );
-  document.querySelectorAll("[data-voltar]").forEach((btn) =>
-    btn.addEventListener("click", mostrarResumo)
-  );
-  document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
-  document.getElementById("popup-remover").addEventListener("click", removerJogador);
-  document.getElementById("popup-busca").addEventListener("input", (e) =>
-    renderListaPopup(e.target.value)
-  );
-  document.getElementById("popup").addEventListener("click", (e) => {
-    if (e.target.id === "popup") fecharPopup();
-  });
-
-  // ----- seletor de cor proprio -----
-  function fecharMenus(exceto) {
-    document.querySelectorAll(".seletor").forEach((s) => {
-      if (s === exceto) return;
-      s.querySelector(".menu").hidden = true;
-      s.querySelector(".gatilho").setAttribute("aria-expanded", "false");
-      s.classList.remove("aberto");
-    });
-  }
-
-  function refletirCor(lado) {
-    const seletor = document.querySelector('[data-seletor="' + lado + '"]');
-    const valor = seletor.querySelector('input[type="hidden"]').value;
-    const opcao = seletor.querySelector('.menu button[data-valor="' + valor + '"]');
-    if (!opcao) return;
-    seletor.querySelector("[data-gatilho-bola]").style.background = opcao.dataset.cor;
-    seletor.querySelector("[data-gatilho-valor]").textContent = opcao.dataset.nome;
-    seletor.querySelectorAll(".menu button").forEach((b) =>
-      b.classList.toggle("marcado", b === opcao)
-    );
-    // A bolinha ao lado do nome do time.
-    const bola = document.querySelector('[data-bola="' + lado + '"]');
-    if (bola) bola.style.background = opcao.dataset.cor;
-  }
-
-  // Os dois times nao podem usar a mesma cor: a cor de um lado fica bloqueada
-  // na lista do outro, entao o erro nem chega a ser possivel.
-  function impedirCorRepetida() {
-    const escolhida = {};
-    for (const lado of ["a", "b"]) {
-      escolhida[lado] = document
-        .querySelector('[data-seletor="' + lado + '"] input[type="hidden"]').value;
-    }
-    for (const lado of ["a", "b"]) {
-      const doOutro = lado === "a" ? escolhida.b : escolhida.a;
-      document
-        .querySelectorAll('[data-seletor="' + lado + '"] .menu button')
-        .forEach((b) => {
-          const bloqueado = b.dataset.valor === doOutro;
-          b.disabled = bloqueado;
-          b.title = bloqueado ? "Já é a cor do outro time" : "";
-        });
-    }
-  }
-
-  document.querySelectorAll("[data-seletor]").forEach((seletor) => {
-    const gatilho = seletor.querySelector(".gatilho");
-    const menu = seletor.querySelector(".menu");
-    gatilho.addEventListener("click", () => {
-      const abrindo = menu.hidden;
-      fecharMenus(seletor);
-      menu.hidden = !abrindo;
-      gatilho.setAttribute("aria-expanded", String(abrindo));
-      seletor.classList.toggle("aberto", abrindo);
-    });
-    menu.querySelectorAll("button").forEach((op) =>
-      op.addEventListener("click", () => {
-        seletor.querySelector('input[type="hidden"]').value = op.dataset.valor;
-        menu.hidden = true;
-        gatilho.setAttribute("aria-expanded", "false");
-        seletor.classList.remove("aberto");
-        refletirCor(seletor.dataset.seletor);
-        impedirCorRepetida();
-      })
-    );
-  });
-
-  refletirCor("a");
-  refletirCor("b");
-  impedirCorRepetida();
-
-  // ----- calendario proprio -----
+  // ------------------------------------------------------------- calendario
   const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho",
                  "agosto","setembro","outubro","novembro","dezembro"];
   const campoData = document.querySelector("[data-calendario]");
-  const entradaData = campoData.querySelector('input[type="hidden"]');
   const menuCal = campoData.querySelector(".cal");
   let mesVisivel;
 
   const soData = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const paraISO = (d) =>
-    d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
-    "-" + String(d.getDate()).padStart(2, "0");
+  const paraISO = (d) => d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   const daISO = (s) => { const [a, m, d] = s.split("-").map(Number); return new Date(a, m - 1, d); };
 
-  function mostrarData() {
-    const d = daISO(entradaData.value);
-    campoData.querySelector("[data-data-valor]").textContent =
-      String(d.getDate()).padStart(2, "0") + " de " + MESES[d.getMonth()] + " de " + d.getFullYear();
-  }
-
-  // Recado dentro do proprio calendario, onde o clique aconteceu.
   function recado(texto) {
     const p = campoData.querySelector("[data-cal-recado]");
     p.textContent = texto || "";
     p.hidden = !texto;
   }
 
+  function mostrarData() {
+    const d = daISO(estado.data);
+    campoData.querySelector("[data-data-valor]").textContent =
+      String(d.getDate()).padStart(2, "0") + " de " + MESES[d.getMonth()] +
+      " de " + d.getFullYear();
+  }
+
   function desenharMes() {
-    // Capitaliza so o mes: text-transform:capitalize no CSS deixava "Setembro
-    // De 2026", com o "de" em maiuscula.
     const mes = MESES[mesVisivel.getMonth()];
     campoData.querySelector("[data-cal-titulo]").textContent =
       mes[0].toUpperCase() + mes.slice(1) + " de " + mesVisivel.getFullYear();
-    // Avancar para um mes inteiro de datas futuras nao leva a nada: a seta
-    // desliga quando o mes visivel ja e o mes corrente.
+
+    // Avancar para um mes inteiro de datas futuras nao leva a nada.
     const agora = new Date();
-    const noMesAtual =
+    campoData.querySelector('[data-mes="1"]').disabled =
       mesVisivel.getFullYear() === agora.getFullYear() &&
       mesVisivel.getMonth() === agora.getMonth();
-    campoData.querySelector('[data-mes="1"]').disabled = noMesAtual;
 
     const grade = campoData.querySelector("[data-cal-dias]");
     grade.innerHTML = "";
     const primeiro = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth(), 1);
     const dias = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth() + 1, 0).getDate();
     const hoje = soData(new Date());
-    const escolhido = daISO(entradaData.value).getTime();
+    const escolhido = daISO(estado.data).getTime();
 
-    for (let i = 0; i < primeiro.getDay(); i++) {
-      grade.appendChild(document.createElement("span"));
-    }
+    for (let i = 0; i < primeiro.getDay(); i++) grade.appendChild(document.createElement("span"));
     for (let dia = 1; dia <= dias; dia++) {
       const data = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth(), dia);
       const b = document.createElement("button");
@@ -539,28 +592,23 @@
       b.className = "cal-dia";
       if (data.getTime() === escolhido) b.classList.add("escolhido");
       if (data.getTime() === hoje.getTime()) b.classList.add("hoje");
-
-      // Pelada que ainda nao aconteceu nao pode ser lancada. O dia fica
-      // apagado mas continua clicavel de proposito: botao com disabled nao
-      // dispara clique nenhum, e ai nao daria para explicar o motivo.
+      // Pelada que ainda nao aconteceu nao pode ser lancada. Fica apagado mas
+      // clicavel: botao com disabled nao dispara clique, e ai nao daria para
+      // explicar o motivo.
       const futuro = data.getTime() > hoje.getTime();
-      if (futuro) {
-        b.classList.add("futuro");
-        b.setAttribute("aria-disabled", "true");
-      }
-
+      if (futuro) { b.classList.add("futuro"); b.setAttribute("aria-disabled", "true"); }
       b.addEventListener("click", () => {
         if (futuro) {
           recado("Essa data ainda não chegou — só dá para lançar pelada que já aconteceu.");
           return;
         }
         recado(null);
-        entradaData.value = paraISO(data);
+        estado.data = paraISO(data);
         mostrarData();
         desenharMes();
         menuCal.hidden = true;
         campoData.classList.remove("aberto");
-        campoData.querySelector(".gatilho").setAttribute("aria-expanded", "false");
+        sincronizar();
       });
       grade.appendChild(b);
     }
@@ -568,38 +616,80 @@
 
   campoData.querySelectorAll("[data-mes]").forEach((b) =>
     b.addEventListener("click", () => {
-      mesVisivel = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth() + Number(b.dataset.mes), 1);
+      mesVisivel = new Date(mesVisivel.getFullYear(),
+                            mesVisivel.getMonth() + Number(b.dataset.mes), 1);
       desenharMes();
     })
   );
 
-  // O gatilho do calendario precisa do proprio handler: ele nao e um
-  // [data-seletor], entao nao entrava no laco que abre os menus de cor.
   const gatilhoCal = campoData.querySelector(".gatilho");
   gatilhoCal.addEventListener("click", () => {
     const abrindo = menuCal.hidden;
-    if (abrindo) recado(null);  // recado antigo nao acompanha a proxima abertura
+    if (abrindo) recado(null);
     fecharMenus(campoData);
     menuCal.hidden = !abrindo;
     gatilhoCal.setAttribute("aria-expanded", String(abrindo));
     campoData.classList.toggle("aberto", abrindo);
   });
 
-  mesVisivel = new Date(daISO(entradaData.value).getFullYear(), daISO(entradaData.value).getMonth(), 1);
-  mostrarData();
-  desenharMes();
+  // ------------------------------------------------------- envio e validacao
+  function problema() {
+    if (estado.times.length < 2) return "A pelada precisa de pelo menos dois times.";
+    for (let i = 0; i < estado.times.length; i++) {
+      if (emCampo(estado.times[i]) < TITULARES) {
+        return "Escale os " + TITULARES + " titulares do time " + letra(i) + ".";
+      }
+    }
+    if (!estado.jogos.length) return "Registre pelo menos um jogo da noite.";
+    return null;
+  }
 
-  // Clique fora fecha qualquer menu aberto.
+  function sincronizar() {
+    document.getElementById("dados").value = JSON.stringify({
+      data: estado.data,
+      times: estado.times.map((t) => ({
+        cor_id: t.corId,
+        jogadores: [
+          ...POSICOES.filter(([c]) => t.campo[c])
+                     .map(([c]) => ({ id: t.campo[c], posicao: c })),
+          ...t.reservas.filter(Boolean).map((id) => ({ id, posicao: "RES" })),
+        ],
+      })),
+      jogos: estado.jogos.map((j) => ({
+        cor_a: j.corA, cor_b: j.corB, vencedor: j.vencedor,
+      })),
+    });
+    const p = problema();
+    document.querySelector('#form-pelada button[type="submit"]').disabled = !!p;
+    const aviso = document.getElementById("aviso-salvar");
+    aviso.textContent = p || "";
+    aviso.hidden = !p;
+  }
+
+  function renderTudo() {
+    renderTimes();
+    renderJogos();
+    sincronizar();
+  }
+
+  document.getElementById("editor-voltar").addEventListener("click", fecharEditor);
+  document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
+  document.getElementById("popup-remover").addEventListener("click", removerJogador);
+  document.getElementById("popup-busca").addEventListener("input", (e) =>
+    renderListaPopup(e.target.value));
+  document.getElementById("popup").addEventListener("click", (e) => {
+    if (e.target.id === "popup") fecharPopup();
+  });
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".seletor")) fecharMenus(null);
   });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") fecharMenus(null);
-  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharMenus(null); });
+  document.getElementById("form-pelada").addEventListener("submit", sincronizar);
 
-  document.getElementById("form-pelada").addEventListener("submit", sincronizarInputs);
-
-  sincronizarInputs();
+  mesVisivel = new Date(daISO(estado.data).getFullYear(), daISO(estado.data).getMonth(), 1);
+  mostrarData();
+  desenharMes();
+  renderTudo();
 })();
 </script>
 {% endblock %}

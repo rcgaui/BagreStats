@@ -1,4 +1,5 @@
 """Testes da tela de lancar pelada: as validacoes que impedem lixo no banco."""
+import json
 from datetime import date, timedelta
 
 import pytest
@@ -9,7 +10,9 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base, get_session
 from app.main import app
-from app.models import Cor, Jogador, Partida
+from app.models import Cor, Jogador, Partida, Pelada
+
+CORES = ["PRETO", "BRANCO", "VERMELHO"]
 
 
 @pytest.fixture
@@ -25,8 +28,9 @@ def cliente():
     Fabrica = sessionmaker(bind=engine, expire_on_commit=False)
 
     with Fabrica() as s:
-        s.add_all([Cor(nome="PRETO", codigo="#000"), Cor(nome="BRANCO", codigo="#fff")])
-        s.add_all([Jogador(apelido=n) for n in ["Ana", "Bruno", "Carla", "Davi"]])
+        s.add_all([Cor(nome=n, codigo="#000") for n in CORES])
+        # 21 jogadores: o suficiente para tres times de sete.
+        s.add_all([Jogador(apelido=f"J{i:02d}") for i in range(1, 22)])
         s.commit()
 
     def sessao_de_teste():
@@ -38,66 +42,121 @@ def cliente():
     app.dependency_overrides.clear()
 
 
-def _pelada(**mudancas):
-    # posicoes_a/posicoes_b sao paralelas a time_a/time_b: posicoes_a[i] eh a
-    # vaga de time_a[i]. A tela sempre manda os dois pares juntos.
-    base = {
-        "data": "2026-09-03",
-        "cor_a": 1,
-        "cor_b": 2,
-        "vencedor": "A",
-        "time_a": [1, 2],
-        "posicoes_a": ["GOL", "ZAG"],
-        "time_b": [3, 4],
-        "posicoes_b": ["GOL", "RES"],
-    }
-    return {**base, **mudancas}
+POSICOES = ["GOL", "ZAG", "LAT_E", "LAT_D", "MEI_E", "MEI_D", "ATA"]
 
+
+def _time(cor_id, primeiro_jogador, titulares=7, reservas=0):
+    jogadores = [
+        {"id": primeiro_jogador + i, "posicao": POSICOES[i]} for i in range(titulares)
+    ]
+    jogadores += [
+        {"id": primeiro_jogador + titulares + i, "posicao": "RES"}
+        for i in range(reservas)
+    ]
+    return {"cor_id": cor_id, "jogadores": jogadores}
+
+
+def _noite(**mudancas):
+    base = {
+        "data": date.today().isoformat(),
+        "times": [_time(1, 1), _time(2, 8)],
+        "jogos": [{"cor_a": 1, "cor_b": 2, "vencedor": 1}],
+    }
+    return {"dados": json.dumps({**base, **mudancas})}
+
+
+# ------------------------------------------------------------- caminho feliz
 
 def test_salva_a_pelada_e_volta_para_a_classificacao(cliente):
     c, Fabrica = cliente
-    r = c.post("/lancar", data=_pelada())
+    r = c.post("/lancar", data=_noite())
     assert r.status_code == 303 and r.headers["location"] == "/"
     with Fabrica() as s:
-        partida = s.query(Partida).one()
-        assert partida.data == date(2026, 9, 3)
-        assert len(partida.participacoes) == 4
-        assert not partida.empate
+        pelada = s.query(Pelada).one()
+        assert pelada.data == date.today()
+        assert len(pelada.participacoes) == 14
+        assert len(pelada.partidas) == 1
 
 
 def test_grava_a_posicao_de_cada_jogador(cliente):
     c, Fabrica = cliente
-    c.post("/lancar", data=_pelada())
+    c.post("/lancar", data=_noite())
     with Fabrica() as s:
-        posicoes = {p.jogador_id: p.posicao for p in s.query(Partida).one().participacoes}
-        assert posicoes == {1: "GOL", 2: "ZAG", 3: "GOL", 4: "RES"}
+        pos = {p.jogador_id: p.posicao for p in s.query(Pelada).one().participacoes}
+        assert pos[1] == "GOL" and pos[7] == "ATA"
+        assert pos[8] == "GOL" and pos[14] == "ATA"
 
 
-def test_jogador_sem_posicao_correspondente_fica_de_fora(cliente):
-    # A tela sempre manda os dois pares do mesmo tamanho; se um dia nao mandar
-    # (bug de JS), o jogador sem par so nao entra - nao quebra o lancamento
-    # inteiro nem grava posicao inventada.
+def test_reserva_entra_com_posicao_res(cliente):
     c, Fabrica = cliente
-    c.post("/lancar", data=_pelada(time_a=[1, 2], posicoes_a=["GOL"]))
+    c.post("/lancar", data=_noite(times=[_time(1, 1, reservas=2), _time(2, 11)]))
     with Fabrica() as s:
-        ids = {p.jogador_id for p in s.query(Partida).one().participacoes if p.cor_id == 1}
-        assert ids == {1}
+        reservas = [p for p in s.query(Pelada).one().participacoes if p.posicao == "RES"]
+        assert len(reservas) == 2
 
 
 def test_empate_grava_vencedor_vazio(cliente):
     c, Fabrica = cliente
-    c.post("/lancar", data=_pelada(vencedor="EMPATE"))
+    c.post("/lancar", data=_noite(jogos=[{"cor_a": 1, "cor_b": 2, "vencedor": None}]))
     with Fabrica() as s:
         assert s.query(Partida).one().empate
 
 
-def test_recusa_jogador_escalado_nos_dois_times(cliente):
-    c, Fabrica = cliente
-    r = c.post("/lancar", data=_pelada(time_a=[1, 2], time_b=[2, 3]))
-    assert "erro" in r.headers["location"]
-    with Fabrica() as s:
-        assert s.query(Partida).count() == 0
+# ----------------------------------------------------------------- tres times
 
+def test_salva_noite_de_tres_times_com_varios_jogos(cliente):
+    c, Fabrica = cliente
+    r = c.post("/lancar", data=_noite(
+        times=[_time(1, 1), _time(2, 8), _time(3, 15)],
+        jogos=[
+            {"cor_a": 1, "cor_b": 2, "vencedor": 1},
+            {"cor_a": 1, "cor_b": 3, "vencedor": 3},
+            {"cor_a": 3, "cor_b": 2, "vencedor": None},
+            {"cor_a": 1, "cor_b": 2, "vencedor": 2},
+        ],
+    ))
+    assert r.headers["location"] == "/"
+    with Fabrica() as s:
+        pelada = s.query(Pelada).one()
+        assert len(pelada.participacoes) == 21
+        assert len(pelada.partidas) == 4
+        # A ordem dos jogos e preservada: e ela que conta a historia da noite.
+        assert [j.ordem for j in pelada.partidas] == [1, 2, 3, 4]
+        assert [j.cor_vencedora_id for j in pelada.partidas] == [1, 3, None, 2]
+
+
+def test_recusa_jogo_com_cor_que_nao_esta_na_noite(cliente):
+    c, Fabrica = cliente
+    r = c.post("/lancar", data=_noite(jogos=[{"cor_a": 1, "cor_b": 3, "vencedor": 1}]))
+    assert "cor+que+nao+jogou" in r.headers["location"]
+    with Fabrica() as s:
+        assert s.query(Pelada).count() == 0
+
+
+def test_recusa_vencedor_que_nao_jogou_a_partida(cliente):
+    c, _ = cliente
+    r = c.post("/lancar", data=_noite(
+        times=[_time(1, 1), _time(2, 8), _time(3, 15)],
+        jogos=[{"cor_a": 1, "cor_b": 2, "vencedor": 3}],
+    ))
+    assert "vencedor" in r.headers["location"]
+
+
+def test_recusa_jogo_com_a_mesma_cor_dos_dois_lados(cliente):
+    c, _ = cliente
+    r = c.post("/lancar", data=_noite(jogos=[{"cor_a": 1, "cor_b": 1, "vencedor": 1}]))
+    assert "mesma+cor+dos+dois+lados" in r.headers["location"]
+
+
+def test_recusa_noite_sem_nenhum_jogo(cliente):
+    c, Fabrica = cliente
+    r = c.post("/lancar", data=_noite(jogos=[]))
+    assert "pelo+menos+um+jogo" in r.headers["location"]
+    with Fabrica() as s:
+        assert s.query(Pelada).count() == 0
+
+
+# ------------------------------------------------------------------ recusas
 
 def test_recusa_data_no_futuro(cliente):
     # Pelada que ainda nao aconteceu nao pode ser lancada. O calendario apaga
@@ -105,36 +164,60 @@ def test_recusa_data_no_futuro(cliente):
     # uma barreira de confianca.
     c, Fabrica = cliente
     amanha = (date.today() + timedelta(days=1)).isoformat()
-    r = c.post("/lancar", data=_pelada(data=amanha))
+    r = c.post("/lancar", data=_noite(data=amanha))
     assert "ainda+nao+chegou" in r.headers["location"]
     with Fabrica() as s:
-        assert s.query(Partida).count() == 0
+        assert s.query(Pelada).count() == 0
 
 
 def test_aceita_a_data_de_hoje(cliente):
     c, Fabrica = cliente
-    r = c.post("/lancar", data=_pelada(data=date.today().isoformat()))
+    r = c.post("/lancar", data=_noite(data=date.today().isoformat()))
     assert r.headers["location"] == "/"
     with Fabrica() as s:
-        assert s.query(Partida).one().data == date.today()
+        assert s.query(Pelada).one().data == date.today()
+
+
+def test_recusa_jogador_escalado_em_dois_times(cliente):
+    c, Fabrica = cliente
+    r = c.post("/lancar", data=_noite(times=[_time(1, 1), _time(2, 5)]))
+    assert "mais+de+um+time" in r.headers["location"]
+    with Fabrica() as s:
+        assert s.query(Pelada).count() == 0
 
 
 def test_recusa_times_com_a_mesma_cor(cliente):
-    c, Fabrica = cliente
-    r = c.post("/lancar", data=_pelada(cor_b=1))
+    c, _ = cliente
+    r = c.post("/lancar", data=_noite(times=[_time(1, 1), _time(1, 8)]))
     assert "mesma+cor" in r.headers["location"]
 
 
-def test_recusa_time_vazio(cliente):
+def test_recusa_time_sem_os_sete_titulares(cliente):
     c, Fabrica = cliente
-    r = c.post("/lancar", data=_pelada(time_b=[]))
-    assert "erro" in r.headers["location"]
-
-
-def test_recusa_duas_partidas_na_mesma_data(cliente):
-    c, Fabrica = cliente
-    c.post("/lancar", data=_pelada())
-    r = c.post("/lancar", data=_pelada(time_a=[3], time_b=[4]))
-    assert "Ja+existe" in r.headers["location"]
+    r = c.post("/lancar", data=_noite(times=[_time(1, 1), _time(2, 8, titulares=6)]))
+    assert "titulares" in r.headers["location"]
     with Fabrica() as s:
-        assert s.query(Partida).count() == 1
+        assert s.query(Pelada).count() == 0
+
+
+def test_recusa_noite_com_um_time_so(cliente):
+    c, _ = cliente
+    r = c.post("/lancar", data=_noite(times=[_time(1, 1)]))
+    assert "dois+times" in r.headers["location"]
+
+
+def test_recusa_duas_peladas_na_mesma_data(cliente):
+    c, Fabrica = cliente
+    c.post("/lancar", data=_noite())
+    r = c.post("/lancar", data=_noite(times=[_time(1, 15), _time(2, 8)]))
+    assert "Ja+existe+pelada" in r.headers["location"]
+    with Fabrica() as s:
+        assert s.query(Pelada).count() == 1
+
+
+def test_recusa_json_malformado(cliente):
+    c, Fabrica = cliente
+    r = c.post("/lancar", data={"dados": "isso nao e json"})
+    assert "erro" in r.headers["location"]
+    with Fabrica() as s:
+        assert s.query(Pelada).count() == 0

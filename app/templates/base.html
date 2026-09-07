@@ -291,7 +291,39 @@
   .duelo .conta{color:var(--fraco);font-size:12px;font-weight:500}
 
   /* ---------- lancar pelada ---------- */
-  .resumo-times{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+  .rodape-card{padding:14px 18px;border-top:1px solid var(--linha)}
+  /* Acao secundaria que nao merece a moldura de um botao. */
+  .so-texto{background:none;border:none;padding:4px 0;font-size:12.5px;
+            font-weight:600;color:var(--fraco);cursor:pointer;text-align:left;
+            align-self:flex-start;letter-spacing:0}
+  .so-texto:hover{filter:none;transform:none;color:var(--txt);background:none}
+  .so-texto:active{transform:none}
+  .so-texto.perigo:hover{color:var(--vermelho)}
+
+  /* ---------- um jogo da noite ---------- */
+  .jogo{display:flex;align-items:center;gap:14px;padding:14px 18px;flex-wrap:wrap}
+  .jogo + .jogo{border-top:1px solid var(--linha)}
+  .jogo .ordem{width:22px;height:22px;border-radius:50%;background:var(--linha);
+               color:var(--fraco);font-size:11px;font-weight:700;flex:none;
+               display:grid;place-items:center}
+  .jogo-lados{display:flex;align-items:center;gap:10px;flex:1;min-width:230px}
+  .jogo-lados .seletor{flex:1}
+  .jogo .versus{color:var(--fraco);font-size:13px;flex:none}
+  .jogo .segmentado{flex:none}
+  .jogo .segmentado .seg{margin:0;padding:8px 12px;border:none;background:none;
+    border-radius:7px;font-size:12.5px;font-weight:600;color:var(--fraco);
+    cursor:pointer;letter-spacing:0;white-space:nowrap}
+  .jogo .segmentado .seg:hover{background:var(--sobe);color:var(--txt);filter:none;
+                               transform:none}
+  .jogo .segmentado .seg:active{transform:none}
+  .jogo .segmentado .seg.marcado{background:var(--acento);color:var(--acento-txt)}
+  @media(max-width:620px){
+    .jogo{gap:10px}
+    .jogo .segmentado{width:100%}
+    .jogo .segmentado .seg{flex:1}
+  }
+
+  .resumo-times{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:18px}
   .cartao-time{border:1px solid var(--linha);border-radius:var(--raio);background:var(--card);
                padding:18px;display:flex;flex-direction:column;gap:14px;
                transition:border-color .15s}
@@ -311,37 +343,59 @@
   .editor-time .topo-editor h2{margin:0;padding:0;border:none;font-size:17px;
                                 text-transform:none;letter-spacing:-.02em;color:var(--txt);
                                 font-weight:700;display:flex;align-items:center;gap:9px}
-  .campo{position:relative;width:100%;max-width:360px;margin:0 auto;aspect-ratio:3/4;
-         background:radial-gradient(120% 90% at 50% 0%,#2f7f45 0%,#1f5f33 100%);
-         border:2px solid #ffffff33;border-radius:10px;overflow:hidden}
-  .campo::before{content:"";position:absolute;inset:0;
-                 background:repeating-linear-gradient(0deg,#ffffff0f 0 12.5%,transparent 12.5% 25%)}
-  .campo::after{content:"";position:absolute;left:50%;top:0;width:36%;height:12%;
-                border:2px solid #ffffff59;border-top:none;transform:translateX(-50%);
-                border-radius:0 0 7px 7px}
+  /* 3/4 com viewBox 75x100 faz as escalas x e y baterem, entao circulo desenhado
+     no SVG sai redondo em vez de oval. */
+  .campo{position:relative;width:100%;max-width:330px;margin:0 auto;aspect-ratio:3/4;
+         background:#25693a;border-radius:10px;overflow:hidden;
+         box-shadow:inset 0 0 70px #00000059}
+  /* Faixas de grama alternadas, bem discretas. */
+  .campo::before{content:"";position:absolute;inset:0;z-index:0;
+                 background:repeating-linear-gradient(0deg,#ffffff0a 0 10%,transparent 10% 20%)}
+  /* As linhas do campo sao um SVG no template: linha e mais nitida em vetor do
+     que empilhando bordas de pseudo-elemento, e o gol fica no lado certo. */
+  .campo .linhas{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+  .campo .linhas [stroke]{stroke:#ffffff6b;fill:none;stroke-width:0.7;
+                          vector-effect:non-scaling-stroke;stroke-width:1.3px}
+  .campo .linhas [data-cheio]{fill:#ffffff6b;stroke:none}
+  /* A trave e o unico traco cheio: e o que marca de que lado fica o gol. */
+  .campo .linhas [data-gol]{fill:none;stroke:#ffffffcc;stroke-width:1.6px;
+                            vector-effect:non-scaling-stroke}
   .vaga{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;
         align-items:center;gap:5px;background:none;border:none;padding:0;cursor:pointer;
-        font:inherit;font-family:var(--fonte);color:inherit}
-  .vaga .bolha{width:46px;height:46px;border-radius:50%;background:#0a0c1080;
+        font:inherit;font-family:var(--fonte);color:inherit;z-index:2}
+  /* CRITICO: a regra global button:active{transform:translateY(1px)} sobrescrevia
+     este transform, que e o que POSICIONA a vaga no campo. Ao apertar, a bolinha
+     saltava de baixo do cursor, o mouseup caia no campo, e como o clique so
+     dispara no ancestral comum de mousedown e mouseup, o handler do botao nunca
+     rodava. O feedback de aperto vai na bolinha, que nao carrega posicionamento. */
+  .vaga:active{transform:translate(-50%,-50%)}
+  .vaga:active .bolha{transform:scale(.94)}
+  .vaga .bolha{width:44px;height:44px;border-radius:50%;background:#0a0c1099;
                border:2px dashed #ffffff8c;display:grid;place-items:center;
                font-size:18px;font-weight:700;color:#fff;
                transition:background .15s,border-color .15s,transform .12s}
-  .vaga:hover .bolha{background:#0a0c10b3;border-color:var(--acento);transform:scale(1.06)}
+  .vaga:hover .bolha{background:#0a0c10cc;border-color:var(--acento);transform:scale(1.07)}
   .vaga.ocupada .bolha{background:var(--acento);border-style:solid;border-color:var(--acento);
                        color:var(--acento-txt);font-size:14px;font-weight:800}
-  .vaga .rotulo{font-size:11px;font-weight:600;color:#ffffffe0;text-shadow:0 1px 3px #000c;
-                white-space:nowrap;max-width:76px;overflow:hidden;text-overflow:ellipsis}
+  .vaga .rotulo{font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 4px #000e;
+                white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
   .reservas{margin-top:22px}
   .reservas .rotulo-secao{font-size:10px;color:var(--fraco);text-transform:uppercase;
                           letter-spacing:.09em;margin-bottom:12px;font-weight:600}
-  .lista-reservas{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
-  .lista-reservas .vaga{position:static;transform:none}
+  .lista-reservas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .lista-reservas .vaga{position:static;transform:none;z-index:auto}
+  .lista-reservas .vaga:active{transform:none}
   .lista-reservas .vaga .bolha{background:#0E1116;border-color:var(--linha);
-                               border-style:solid;color:var(--fraco)}
+                               border-style:solid;color:var(--fraco);
+                               width:42px;height:42px}
   .lista-reservas .vaga:hover .bolha{border-color:var(--acento);color:var(--acento)}
   .lista-reservas .vaga.ocupada .bolha{background:var(--acento);border-color:var(--acento);
                                         color:var(--acento-txt)}
-  .lista-reservas .vaga .rotulo{color:var(--fraco);text-shadow:none}
+  .lista-reservas .vaga .rotulo{color:var(--txt);text-shadow:none}
+  /* Acrescentar vaga e outra acao: botao com texto, nunca outra bolinha. */
+  .add-reserva{padding:9px 14px;font-size:13px;border-radius:9px;
+               border-style:dashed;color:var(--fraco);margin-left:4px}
+  .add-reserva:hover{border-style:dashed}
 
   /* ---------- popup ---------- */
   .popup-fundo{position:fixed;inset:0;background:#000000b8;display:flex;

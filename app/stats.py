@@ -4,10 +4,13 @@ Nenhuma funcao daqui sabe o que e HTML ou navegador. Isso permite testar as
 contas isoladamente, e e o que vai permitir servir um app de celular depois
 sem reescrever nada.
 
-ponytail: as funcoes carregam as participacoes todas para a memoria e contam
-em Python, em vez de somar no banco com SQL. Com uma partida por semana isso
-sao dezenas de linhas por ano e o ganho de legibilidade vale mais. Teto: se um
-dia passar de ~50 mil participacoes, virar agregacao em SQL.
+A unidade da estatistica e o JOGO, nao a noite: numa noite de tres times cada
+um joga um numero diferente de partidas, e contar por noite jogaria fora
+justamente essa diferenca. Quem sentou nao pontua no jogo que nao disputou.
+
+ponytail: as contas percorrem tudo em memoria em vez de agregar em SQL. Sao
+algumas dezenas de jogos por ano e a legibilidade vale mais. Teto: se passar
+de ~50 mil participacoes, virar agregacao no banco.
 """
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -16,30 +19,33 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Cor, Jogador, Participacao, Partida
-
-VITORIA, EMPATE, DERROTA = "V", "E", "D"
+from app.models import (DERROTA, EMPATE, VITORIA, Cor, Jogador, Participacao,
+                        Partida, Pelada)
 
 PONTOS = {VITORIA: 3, EMPATE: 1, DERROTA: 0}
 
 
-def _resultado(partida: Partida, cor_id: int) -> str:
-    """O que aquela cor tirou naquela partida."""
-    if partida.cor_vencedora_id is None:
-        return EMPATE
-    return VITORIA if partida.cor_vencedora_id == cor_id else DERROTA
-
-
-def _participacoes(sessao: Session) -> list[Participacao]:
+def _peladas(sessao: Session) -> list[Pelada]:
+    """As noites com escalacao e jogos ja carregados."""
     return list(
         sessao.scalars(
-            select(Participacao).options(
-                joinedload(Participacao.partida),
-                joinedload(Participacao.jogador),
-                joinedload(Participacao.cor),
+            select(Pelada)
+            .options(
+                joinedload(Pelada.participacoes).joinedload(Participacao.jogador),
+                joinedload(Pelada.participacoes).joinedload(Participacao.cor),
+                joinedload(Pelada.partidas),
             )
-        )
+            .order_by(Pelada.data)
+        ).unique()
     )
+
+
+def _por_cor(pelada: Pelada) -> dict[int, list[Participacao]]:
+    """Quem estava em cada cor naquela noite."""
+    times: dict[int, list[Participacao]] = defaultdict(list)
+    for p in pelada.participacoes:
+        times[p.cor_id].append(p)
+    return times
 
 
 @dataclass
@@ -50,6 +56,7 @@ class Linha:
     vitorias: int = 0
     empates: int = 0
     derrotas: int = 0
+    peladas: int = 0
 
     @property
     def jogos(self) -> int:
@@ -66,18 +73,26 @@ class Linha:
             return 0.0
         return 100 * self.pontos / (3 * self.jogos)
 
+    def marcar(self, resultado: str) -> None:
+        if resultado == VITORIA:
+            self.vitorias += 1
+        elif resultado == EMPATE:
+            self.empates += 1
+        else:
+            self.derrotas += 1
+
 
 def classificacao(sessao: Session) -> list[Linha]:
     linhas: dict[int, Linha] = {}
-    for p in _participacoes(sessao):
-        linha = linhas.setdefault(p.jogador_id, Linha(jogador=p.jogador))
-        resultado = _resultado(p.partida, p.cor_id)
-        if resultado == VITORIA:
-            linha.vitorias += 1
-        elif resultado == EMPATE:
-            linha.empates += 1
-        else:
-            linha.derrotas += 1
+    for pelada in _peladas(sessao):
+        times = _por_cor(pelada)
+        for p in pelada.participacoes:
+            linhas.setdefault(p.jogador_id, Linha(jogador=p.jogador)).peladas += 1
+        for jogo in pelada.partidas:
+            for cor_id in jogo.cores():
+                resultado = jogo.resultado_de(cor_id)
+                for p in times.get(cor_id, []):
+                    linhas[p.jogador_id].marcar(resultado)
     return sorted(
         linhas.values(),
         key=lambda l: (l.pontos, l.aproveitamento, l.vitorias),
@@ -105,60 +120,59 @@ class Perfil:
     duplas: list[Parceria] = field(default_factory=list)
     fregueses: list[Parceria] = field(default_factory=list)
     sem_perder: int = 0
-    historico: list[tuple[Partida, Cor, str]] = field(default_factory=list)
-    # Aproveitamento acumulado apos cada pelada, na ordem em que aconteceram.
-    # E o que o grafico de linha desenha: a curva da carreira do jogador.
+    # Um item por JOGO disputado: a noite, a cor vestida e o resultado.
+    historico: list[tuple[Pelada, Cor, str]] = field(default_factory=list)
+    # Aproveitamento acumulado apos cada jogo, na ordem em que aconteceram.
     evolucao: list[tuple[date, float]] = field(default_factory=list)
 
 
 def perfil(sessao: Session, jogador_id: int) -> Perfil | None:
-    todas = _participacoes(sessao)
-    minhas = [p for p in todas if p.jogador_id == jogador_id]
-    if not minhas:
-        jogador = sessao.get(Jogador, jogador_id)
-        return Perfil(jogador=jogador, linha=Linha(jogador=jogador)) if jogador else None
-
-    jogador = minhas[0].jogador
-    por_partida = defaultdict(list)
-    for p in todas:
-        por_partida[p.partida_id].append(p)
+    jogador = sessao.get(Jogador, jogador_id)
+    if jogador is None:
+        return None
 
     linha = Linha(jogador=jogador)
     duplas: dict[int, Parceria] = {}
     fregueses: dict[int, Parceria] = {}
-    historico = []
+    historico: list[tuple[Pelada, Cor, str]] = []
 
-    for minha in sorted(minhas, key=lambda p: p.partida.data):
-        resultado = _resultado(minha.partida, minha.cor_id)
-        if resultado == VITORIA:
-            linha.vitorias += 1
-        elif resultado == EMPATE:
-            linha.empates += 1
-        else:
-            linha.derrotas += 1
-        historico.append((minha.partida, minha.cor, resultado))
+    for pelada in _peladas(sessao):
+        minha = next(
+            (p for p in pelada.participacoes if p.jogador_id == jogador_id), None
+        )
+        if minha is None:
+            continue
+        linha.peladas += 1
+        times = _por_cor(pelada)
 
-        for outra in por_partida[minha.partida_id]:
-            if outra.jogador_id == jogador_id:
-                continue
-            # Mesmo time = dupla. Time diferente = adversario.
-            alvo = duplas if outra.cor_id == minha.cor_id else fregueses
-            par = alvo.setdefault(outra.jogador_id, Parceria(jogador=outra.jogador))
-            par.jogos += 1
-            if resultado == VITORIA:
-                par.vitorias += 1
+        for jogo in pelada.partidas:
+            resultado = jogo.resultado_de(minha.cor_id)
+            if resultado is None:
+                continue  # o time dele sentou neste jogo
+            linha.marcar(resultado)
+            historico.append((pelada, minha.cor, resultado))
 
-    # Evolucao: refaz a conta pelada a pelada, guardando o acumulado de cada
-    # ponto no tempo. O historico ja esta em ordem cronologica aqui.
+            cor_adversaria = next(c for c in jogo.cores() if c != minha.cor_id)
+            for alvo, participantes in (
+                (duplas, times.get(minha.cor_id, [])),
+                (fregueses, times.get(cor_adversaria, [])),
+            ):
+                for outro in participantes:
+                    if outro.jogador_id == jogador_id:
+                        continue
+                    par = alvo.setdefault(
+                        outro.jogador_id, Parceria(jogador=outro.jogador)
+                    )
+                    par.jogos += 1
+                    if resultado == VITORIA:
+                        par.vitorias += 1
+
+    # Evolucao: refaz a conta jogo a jogo, guardando o acumulado de cada ponto
+    # no tempo. O historico ja esta em ordem cronologica aqui.
     evolucao, corrida = [], Linha(jogador=jogador)
-    for partida, _, resultado in historico:
-        if resultado == VITORIA:
-            corrida.vitorias += 1
-        elif resultado == EMPATE:
-            corrida.empates += 1
-        else:
-            corrida.derrotas += 1
-        evolucao.append((partida.data, corrida.aproveitamento))
+    for pelada, _, resultado in historico:
+        corrida.marcar(resultado)
+        evolucao.append((pelada.data, corrida.aproveitamento))
 
     # Sequencia sem perder: conta de tras para frente ate a primeira derrota.
     sem_perder = 0
@@ -197,22 +211,23 @@ class Confronto:
 
 
 def confrontos(sessao: Session) -> list[Confronto]:
-    partidas = sessao.scalars(
-        select(Partida).options(joinedload(Partida.participacoes).joinedload(Participacao.cor))
+    jogos = sessao.scalars(
+        select(Partida).options(
+            joinedload(Partida.cor_a),
+            joinedload(Partida.cor_b),
+            joinedload(Partida.cor_vencedora),
+        )
     ).unique()
 
     resultado: dict[tuple[str, str], Confronto] = {}
-    for partida in partidas:
-        cores = {p.cor.nome for p in partida.participacoes}
-        if len(cores) != 2:
-            continue  # partida sem dois times nao entra no confronto
+    for jogo in jogos:
         # "preto x branco" e "branco x preto" sao o mesmo confronto: ordenamos
         # o par pelo nome para os dois cairem na mesma chave.
-        a, b = sorted(cores)
+        a, b = sorted([jogo.cor_a.nome, jogo.cor_b.nome])
         conf = resultado.setdefault((a, b), Confronto(cor_a=a, cor_b=b))
-        if partida.cor_vencedora is None:
+        if jogo.cor_vencedora is None:
             conf.empates += 1
-        elif partida.cor_vencedora.nome == a:
+        elif jogo.cor_vencedora.nome == a:
             conf.vitorias_a += 1
         else:
             conf.vitorias_b += 1

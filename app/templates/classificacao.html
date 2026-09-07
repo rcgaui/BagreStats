@@ -2,7 +2,7 @@
 {% block titulo %}Classificação · BagreStats{% endblock %}
 {% block conteudo %}
 <h1>Classificação</h1>
-<p class="sub">{{ total_partidas }} pelada{{ 's' if total_partidas != 1 }} registrada{{ 's' if total_partidas != 1 }} · 3 pontos por vitória, 1 por empate</p>
+<p class="sub">{{ total_peladas }} pelada{{ 's' if total_peladas != 1 }} · {{ total_jogos }} jogo{{ 's' if total_jogos != 1 }} · 3 pontos por vitória, 1 por empate</p>
 
 <div class="card">
 {% if tabela %}
