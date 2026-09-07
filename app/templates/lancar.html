@@ -115,7 +115,8 @@
         <h3 id="popup-titulo">Vaga</h3>
         <button type="button" class="fechar" id="popup-fechar" aria-label="Fechar">×</button>
       </div>
-      <input type="search" id="popup-busca" placeholder="Buscar jogador..." style="font-size:16px">
+      <input type="search" id="popup-busca" placeholder="Buscar ou cadastrar jogador..." style="font-size:16px">
+      <p class="popup-aviso" id="popup-aviso" hidden></p>
     </div>
     <button type="button" class="remover-jogador" id="popup-remover" hidden>Remover desta vaga</button>
     <div class="popup-lista" id="popup-lista"></div>
@@ -490,15 +491,42 @@
   }
 
   function renderListaPopup(termo) {
+    const busca = termo.trim();
     const ocupados = idsOcupados(popupAlvo);
     const livres = jogadores.filter(
-      (j) => !ocupados.has(j.id) && j.apelido.toLowerCase().includes(termo.toLowerCase())
+      (j) => !ocupados.has(j.id) && j.apelido.toLowerCase().includes(busca.toLowerCase())
     );
     const lista = document.getElementById("popup-lista");
     lista.innerHTML = "";
-    if (!livres.length) {
-      lista.innerHTML = '<div class="vazio">Nenhum jogador disponível.</div>';
-      return;
+
+    // Cadastrar sem sair da tela: quem chega de ultima hora entra no elenco
+    // aqui mesmo, sem perder a escalacao ja montada.
+    const jaExiste = jogadores.some(
+      (j) => j.apelido.toLowerCase() === busca.toLowerCase()
+    );
+    if (!jaExiste) {
+      const novo = document.createElement("button");
+      novo.type = "button";
+      novo.className = "cadastrar";
+      novo.innerHTML =
+        '<span class="mais">+</span><span class="nome">' +
+        (busca ? "Cadastrar “" + escapar(busca) + "”" : "Cadastrar novo jogador") +
+        "</span>";
+      novo.addEventListener("click", () => {
+        if (!busca) {
+          document.getElementById("popup-busca").focus();
+          avisoPopup("Digite o apelido do jogador aí em cima.");
+          return;
+        }
+        cadastrarJogador(busca);
+      });
+      lista.appendChild(novo);
+    }
+
+    if (!livres.length && jaExiste) {
+      lista.insertAdjacentHTML(
+        "beforeend", '<div class="vazio">Esse jogador já está escalado.</div>'
+      );
     }
     for (const j of livres) {
       const b = document.createElement("button");
@@ -506,6 +534,33 @@
       b.textContent = j.apelido;
       b.addEventListener("click", () => escolherJogador(j.id));
       lista.appendChild(b);
+    }
+  }
+
+  const escapar = (t) =>
+    t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function avisoPopup(texto) {
+    const p = document.getElementById("popup-aviso");
+    p.textContent = texto || "";
+    p.hidden = !texto;
+  }
+
+  async function cadastrarJogador(apelido) {
+    avisoPopup(null);
+    const alvo = popupAlvo;  // a resposta demora; o alvo pode mudar no meio
+    try {
+      const corpo = new FormData();
+      corpo.append("apelido", apelido);
+      const r = await fetch("/api/jogadores", { method: "POST", body: corpo });
+      const dados = await r.json();
+      if (!r.ok) { avisoPopup(dados.erro || "Não deu para cadastrar."); return; }
+      jogadores.push(dados);
+      jogadores.sort((a, b) => a.apelido.localeCompare(b.apelido, "pt-BR"));
+      popupAlvo = alvo;
+      escolherJogador(dados.id);  // ja entra na vaga que estava aberta
+    } catch {
+      avisoPopup("Não deu para falar com o servidor.");
     }
   }
 
@@ -675,8 +730,20 @@
   document.getElementById("editor-voltar").addEventListener("click", fecharEditor);
   document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
   document.getElementById("popup-remover").addEventListener("click", removerJogador);
-  document.getElementById("popup-busca").addEventListener("input", (e) =>
-    renderListaPopup(e.target.value));
+  document.getElementById("popup-busca").addEventListener("input", (e) => {
+    avisoPopup(null);
+    renderListaPopup(e.target.value);
+  });
+  // Enter escolhe o unico da lista, ou cadastra quem ainda nao existe: e o
+  // reflexo de quem digita o nome inteiro.
+  document.getElementById("popup-busca").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const primeiro = document.querySelector("#popup-lista button:not(.cadastrar)");
+    const cadastrar = document.querySelector("#popup-lista button.cadastrar");
+    if (primeiro) primeiro.click();
+    else if (cadastrar) cadastrar.click();
+  });
   document.getElementById("popup").addEventListener("click", (e) => {
     if (e.target.id === "popup") fecharPopup();
   });

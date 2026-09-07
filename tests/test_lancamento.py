@@ -221,3 +221,49 @@ def test_recusa_json_malformado(cliente):
     assert "erro" in r.headers["location"]
     with Fabrica() as s:
         assert s.query(Pelada).count() == 0
+
+
+# ----------------------------------------- cadastro de jogador sem sair da tela
+
+def test_cadastra_jogador_e_devolve_o_id(cliente):
+    c, Fabrica = cliente
+    r = c.post("/api/jogadores", data={"apelido": "Zezinho"})
+    assert r.status_code == 200
+    assert r.json()["apelido"] == "Zezinho"
+    with Fabrica() as s:
+        assert s.query(Jogador).filter_by(apelido="Zezinho").one().id == r.json()["id"]
+
+
+def test_recusa_apelido_repetido_ignorando_maiusculas(cliente):
+    # "bog" e "Bog" seriam duas pessoas na estatistica - a mesma fragmentacao
+    # que o id existe para evitar.
+    c, Fabrica = cliente
+    c.post("/api/jogadores", data={"apelido": "Bog"})
+    r = c.post("/api/jogadores", data={"apelido": "  bOg "})
+    assert r.status_code == 422 and "ja esta no elenco" in r.json()["erro"]
+    with Fabrica() as s:
+        assert s.query(Jogador).filter(Jogador.apelido.ilike("bog")).count() == 1
+
+
+def test_recusa_apelido_vazio(cliente):
+    c, Fabrica = cliente
+    antes = 0
+    with Fabrica() as s:
+        antes = s.query(Jogador).count()
+    r = c.post("/api/jogadores", data={"apelido": "   "})
+    assert r.status_code == 422
+    with Fabrica() as s:
+        assert s.query(Jogador).count() == antes
+
+
+def test_o_jogador_cadastrado_pode_ser_escalado_na_hora(cliente):
+    """O caminho que a tela faz: cadastra e ja usa o id na mesma pelada."""
+    c, Fabrica = cliente
+    novo = c.post("/api/jogadores", data={"apelido": "Chegou Agora"}).json()
+    time_b = _time(2, 8)
+    time_b["jogadores"][-1] = {"id": novo["id"], "posicao": "ATA"}
+    r = c.post("/lancar", data=_noite(times=[_time(1, 1), time_b]))
+    assert r.headers["location"] == "/"
+    with Fabrica() as s:
+        ids = {p.jogador_id for p in s.query(Pelada).one().participacoes}
+        assert novo["id"] in ids

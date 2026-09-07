@@ -8,11 +8,11 @@ from datetime import date
 from urllib.parse import quote_plus
 
 from fastapi import Depends, FastAPI, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ValidationError
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import graficos, stats
@@ -223,14 +223,41 @@ def lista_jogadores(request: Request, sessao: Session = Depends(get_session)):
     )
 
 
+def _cadastrar_jogador(sessao: Session, apelido: str) -> tuple[Jogador | None, str]:
+    """Cria o jogador, ou devolve o motivo de nao ter criado."""
+    nome = apelido.strip()
+    if not nome:
+        return None, "O apelido nao pode ficar vazio"
+    # Comparacao sem diferenciar maiusculas: "bog" e "Bog" seriam duas pessoas
+    # diferentes na estatistica, que e exatamente a fragmentacao que o id evita.
+    ja_existe = sessao.scalar(
+        select(Jogador).where(func.lower(Jogador.apelido) == nome.lower())
+    )
+    if ja_existe:
+        return None, f"{ja_existe.apelido} ja esta no elenco"
+    jogador = Jogador(apelido=nome)
+    sessao.add(jogador)
+    sessao.commit()
+    return jogador, ""
+
+
 @app.post("/jogadores")
 def novo_jogador(apelido: str = Form(...), sessao: Session = Depends(get_session)):
-    if apelido.strip() and not sessao.scalar(
-        select(Jogador).where(Jogador.apelido == apelido.strip())
-    ):
-        sessao.add(Jogador(apelido=apelido.strip()))
-        sessao.commit()
+    _cadastrar_jogador(sessao, apelido)
     return RedirectResponse("/jogadores", 303)
+
+
+@app.post("/api/jogadores")
+def novo_jogador_json(apelido: str = Form(...), sessao: Session = Depends(get_session)):
+    """Cadastro sem sair da pagina.
+
+    A tela de lancar pelada precisa disso: um POST comum recarregaria a
+    pagina e levaria junto toda a escalacao montada ate ali.
+    """
+    jogador, motivo = _cadastrar_jogador(sessao, apelido)
+    if jogador is None:
+        return JSONResponse({"erro": motivo}, status_code=422)
+    return {"id": jogador.id, "apelido": jogador.apelido}
 
 
 @app.post("/cores")
