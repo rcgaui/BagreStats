@@ -1,26 +1,41 @@
 {% extends "base.html" %}
 {% block titulo %}Partidas · BagreStats{% endblock %}
+
+{% macro lado(cor, resultado) %}
+{# Uma linha do confronto: a cor e como ela terminou aquele jogo. #}
+<div class="lado r-{{ resultado|lower }}">
+  <span class="bola" style="background:{{ cor.codigo }}"></span>
+  <span class="nome">{{ cor.nome }}</span>
+  <span class="selo-jogo">{{ resultado }}</span>
+</div>
+{% endmacro %}
+
 {% block conteudo %}
 <h1>Partidas</h1>
-<p class="sub">Cada noite de pelada, com os times que entraram e como cada um se saiu.</p>
+<p class="sub">Todos os jogos, agrupados pela noite em que aconteceram.</p>
 
 {% if peladas %}
   {% for pelada, times in peladas %}
-  <a class="card cartao-noite" href="/pelada/{{ pelada.id }}">
-    <div class="noite-topo">
+  <section class="noite">
+    <a class="cabeca-noite" href="/pelada/{{ pelada.id }}">
       <b>{{ pelada.data.strftime('%d/%m/%Y') }}</b>
-      <span class="conta">{{ pelada.partidas|length }} jogo{{ 's' if pelada.partidas|length != 1 }} ·
-        {{ pelada.participacoes|length }} jogadores</span>
+      <span class="conta">{{ pelada.partidas|length }} jogo{{ 's' if pelada.partidas|length != 1 }}
+        · {{ times|length }} times</span>
+    </a>
+
+    <div class="card">
+      {% if pelada.partidas %}
+        {% for jogo in pelada.partidas %}
+        <a class="confronto" href="/pelada/{{ pelada.id }}">
+          {{ lado(jogo.cor_a, 'E' if jogo.empate else ('V' if jogo.cor_vencedora_id == jogo.cor_a_id else 'D')) }}
+          {{ lado(jogo.cor_b, 'E' if jogo.empate else ('V' if jogo.cor_vencedora_id == jogo.cor_b_id else 'D')) }}
+        </a>
+        {% endfor %}
+      {% else %}
+      <div class="vazio">Essa noite não tem jogo registrado.</div>
+      {% endif %}
     </div>
-    <div class="noite-times">
-      {% for t in times %}
-      <span class="chip">
-        <span class="bola" style="background:{{ t.cor.codigo }}"></span>{{ t.cor.nome }}
-        <b>{{ t.vitorias }}V {{ t.empates }}E {{ t.derrotas }}D</b>
-      </span>
-      {% endfor %}
-    </div>
-  </a>
+  </section>
   {% endfor %}
 {% else %}
 <div class="card"><div class="vazio">

@@ -308,20 +308,34 @@
               border-radius:9px}
   .botao-link:hover{border-color:var(--acento);color:var(--acento)}
 
-  .cartao-noite{display:block;text-decoration:none;color:var(--txt);padding:18px;
-                transition:border-color .15s,background .15s}
-  .cartao-noite:hover{border-color:var(--acento);background:var(--sobe)}
-  .noite-topo{display:flex;align-items:baseline;justify-content:space-between;
-              gap:12px;margin-bottom:12px;flex-wrap:wrap}
-  .noite-topo b{font-size:17px;font-weight:700;letter-spacing:-.01em}
-  .noite-topo .conta{color:var(--fraco);font-size:13px}
-  .noite-times{display:flex;gap:9px;flex-wrap:wrap}
-  .chip{display:inline-flex;align-items:center;gap:7px;background:#0E1116;
-        border:1px solid var(--linha);border-radius:99px;padding:6px 13px;
-        font-size:12.5px;color:var(--fraco);text-decoration:none}
-  .chip b{color:var(--txt);font-weight:600;font-size:12px}
-  a.chip:hover{border-color:var(--acento);color:var(--txt)}
-  .chip .av{width:20px;height:20px;font-size:9px}
+  /* A data e um rotulo de secao, nao uma barra dentro do cartao: tira uma
+     borda e um fundo da tela sem tirar informacao nenhuma. */
+  .noite{margin-bottom:26px}
+  .cabeca-noite{display:flex;align-items:baseline;gap:12px;padding:0 2px 10px;
+                text-decoration:none;color:var(--txt);flex-wrap:wrap}
+  .cabeca-noite b{font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .cabeca-noite:hover b{color:var(--acento)}
+  .cabeca-noite .conta{color:var(--fraco);font-size:12.5px}
+
+  /* Um confronto ocupa duas linhas: um time sobre o outro, como num placar. */
+  .confronto{display:flex;flex-direction:column;gap:6px;padding:13px 18px;
+             text-decoration:none;color:var(--txt);transition:background .12s}
+  .confronto + .confronto{border-top:1px solid var(--linha)}
+  .confronto:hover{background:var(--sobe)}
+  .confronto .lado{display:flex;align-items:center;gap:10px;font-size:14.5px}
+  .confronto .lado .nome{flex:1;overflow:hidden;text-overflow:ellipsis;
+                         white-space:nowrap}
+  /* Quem perdeu fica apagado: e o que faz o vencedor saltar sem depender de
+     cor nenhuma. Classes com prefixo porque .V/.E/.D ja existem como
+     utilitarias globais e pintariam a linha inteira. */
+  .confronto .lado.r-v .nome{font-weight:700}
+  .confronto .lado.r-d .nome{color:var(--fraco)}
+  /* .selo-jogo, e nao .marca: essa ja e a classe do logo no cabecalho, e o
+     padding dela inflava a altura deste selo. */
+  .confronto .selo-jogo{flex:none;width:16px;text-align:center;font-size:12px;
+                        font-weight:700;color:var(--fraco)}
+  .confronto .lado.r-v .selo-jogo{color:var(--txt);font-weight:800}
+  .confronto .lado.r-d .selo-jogo{color:var(--vermelho)}
 
   /* ---------- pelada: um jogo, so leitura ---------- */
   .jogo-lido{display:flex;align-items:center;gap:14px;padding:13px 18px;font-size:14px}
