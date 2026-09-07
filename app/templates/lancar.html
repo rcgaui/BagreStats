@@ -76,7 +76,10 @@
   <div class="editor-time" id="editor" hidden>
     <div class="topo-editor">
       <h2 id="editor-titulo"></h2>
-      <button type="button" class="fraco" id="editor-voltar">← Voltar</button>
+      <div class="acoes-editor">
+        <button type="button" class="fraco perigo" id="editor-limpar">Limpar time</button>
+        <button type="button" class="fraco" id="editor-voltar">← Voltar</button>
+      </div>
     </div>
     <div class="campo" id="campo">
       <!-- Linhas do campo. O gol do time fica EMBAIXO, do mesmo lado do
@@ -421,6 +424,7 @@
   // --------------------------------------------------------------- editor
   function abrirEditor(i) {
     editando = i;
+    desarmarLimpar();
     document.getElementById("tela-resumo").hidden = true;
     document.getElementById("editor").hidden = false;
     const cor = corPorId[estado.times[i].corId];
@@ -433,9 +437,43 @@
 
   function fecharEditor() {
     editando = null;
+    desarmarLimpar();
     document.getElementById("editor").hidden = true;
     document.getElementById("tela-resumo").hidden = false;
     renderTudo();
+  }
+
+  // Limpar o time em dois toques: desfazer nove escalacoes na mao e trabalhoso
+  // demais para o botao apagar tudo num clique solto.
+  let confirmandoLimpeza = null;
+
+  function desarmarLimpar() {
+    clearTimeout(confirmandoLimpeza);
+    confirmandoLimpeza = null;
+    const b = document.getElementById("editor-limpar");
+    b.textContent = "Limpar time";
+    b.classList.remove("armado");
+  }
+
+  function atualizarBotaoLimpar() {
+    const time = estado.times[editando];
+    document.getElementById("editor-limpar").disabled = escalados(time) === 0;
+  }
+
+  function limparTime() {
+    const b = document.getElementById("editor-limpar");
+    if (!confirmandoLimpeza) {
+      b.textContent = "Confirmar?";
+      b.classList.add("armado");
+      confirmandoLimpeza = setTimeout(desarmarLimpar, 4000);
+      return;
+    }
+    const time = estado.times[editando];
+    for (const [codigo] of POSICOES) time.campo[codigo] = null;
+    time.reservas = [null, null];  // volta ao estado inicial, sem vagas sobrando
+    desarmarLimpar();
+    renderCampo();
+    renderReservas();
   }
 
   function renderCampo() {
@@ -487,6 +525,7 @@
     mais.textContent = "+ Vaga";
     mais.addEventListener("click", () => { time.reservas.push(null); renderReservas(); });
     lista.appendChild(mais);
+    atualizarBotaoLimpar();
   }
 
   // ---------------------------------------------------------------- popup
@@ -780,6 +819,7 @@
   }
 
   document.getElementById("editor-voltar").addEventListener("click", fecharEditor);
+  document.getElementById("editor-limpar").addEventListener("click", limparTime);
   document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
   document.getElementById("cadastro-fechar").addEventListener("click", fecharPopup);
   document.getElementById("cadastro-voltar").addEventListener("click", voltarParaBusca);

@@ -343,7 +343,16 @@
   .editor-time{border:1px solid var(--linha);border-radius:var(--raio);background:var(--card);
                padding:20px;margin-bottom:18px}
   .editor-time .topo-editor{display:flex;align-items:center;justify-content:space-between;
-                             margin-bottom:18px;gap:12px}
+                             margin-bottom:18px;gap:12px;flex-wrap:wrap}
+  .acoes-editor{display:flex;gap:9px;flex:none}
+  .acoes-editor button{padding:9px 14px;font-size:13px}
+  button.fraco.perigo{color:var(--fraco)}
+  button.fraco.perigo:hover{border-color:var(--vermelho);color:var(--vermelho)}
+  /* Segundo toque: o botao assume a cor do que vai fazer antes de fazer. */
+  button.fraco.armado{background:var(--vermelho);border-color:var(--vermelho);
+                      color:#fff}
+  button.fraco.armado:hover{background:var(--vermelho);border-color:var(--vermelho);
+                            color:#fff;filter:brightness(1.08)}
   .editor-time .topo-editor h2{margin:0;padding:0;border:none;font-size:17px;
                                 text-transform:none;letter-spacing:-.02em;color:var(--txt);
                                 font-weight:700;display:flex;align-items:center;gap:9px}
