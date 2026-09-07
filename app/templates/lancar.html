@@ -810,12 +810,23 @@
           return;
         }
         recado(null);
-        estado.data = paraISO(data);
+        const nova = paraISO(data);
+        // Outra data e outra noite: escalacao e jogos pertencem aquela pelada
+        // especifica e nao podem atravessar. As cores dos times ficam, porque
+        // sao o costume da pelada, nao dado do dia.
+        if (nova !== estado.data) {
+          for (const t of estado.times) {
+            for (const [codigo] of POSICOES) t.campo[codigo] = null;
+            t.reservas = [null, null];
+          }
+          estado.jogos = [];
+        }
+        estado.data = nova;
         mostrarData();
         desenharMes();
         menuCal.hidden = true;
         campoData.classList.remove("aberto");
-        sincronizar();
+        renderTudo();
       });
       grade.appendChild(b);
     }
