@@ -114,11 +114,15 @@ class Lancamento(BaseModel):
 TITULARES = 7  # vagas do campo; reservas nao contam
 
 
-def _criticar(lanc: Lancamento, sessao: Session) -> str | None:
+def _criticar(lanc: Lancamento, sessao: Session, editando: int | None = None) -> str | None:
     """A primeira coisa errada com o lancamento, ou None se esta tudo certo."""
     if lanc.data > date.today():
         return "Essa data ainda nao chegou"
-    if sessao.scalar(select(Pelada).where(Pelada.data == lanc.data)):
+    consulta = select(Pelada).where(Pelada.data == lanc.data)
+    if editando is not None:
+        # A propria pelada nao conflita consigo mesma ao ser reeditada.
+        consulta = consulta.where(Pelada.id != editando)
+    if sessao.scalar(consulta):
         return f"Ja existe pelada em {lanc.data.strftime('%d/%m/%Y')}"
     if len(lanc.times) < 2:
         return "A pelada precisa de pelo menos dois times"
@@ -163,6 +167,13 @@ def salvar_pelada(dados: str = Form(...), sessao: Session = Depends(get_session)
     pelada = Pelada(data=lanc.data)
     sessao.add(pelada)
     sessao.flush()
+    _gravar_conteudo(sessao, pelada, lanc)
+    sessao.commit()
+    return RedirectResponse("/", 303)
+
+
+def _gravar_conteudo(sessao: Session, pelada: Pelada, lanc: Lancamento) -> None:
+    """Escreve escalacao e jogos da noite, substituindo o que houver."""
     for time in lanc.times:
         for jogador in time.jogadores:
             sessao.add(
@@ -183,8 +194,83 @@ def salvar_pelada(dados: str = Form(...), sessao: Session = Depends(get_session)
                 cor_vencedora_id=jogo.vencedor,
             )
         )
+
+
+@app.get("/pelada/{pelada_id}/editar")
+def form_editar_pelada(
+    pelada_id: int, request: Request, erro: str = "",
+    sessao: Session = Depends(get_session),
+):
+    pelada = sessao.get(Pelada, pelada_id)
+    if pelada is None:
+        return RedirectResponse("/peladas", 303)
+    jogadores = _jogadores(sessao)
+
+    # A tela e a mesma de lancar; muda so o estado inicial e para onde envia.
+    por_cor: dict[int, list] = {}
+    for p in pelada.participacoes:
+        por_cor.setdefault(p.cor_id, []).append(
+            {"id": p.jogador_id, "posicao": p.posicao}
+        )
+    return templates.TemplateResponse(
+        "lancar.html",
+        {
+            "request": request,
+            "pagina": "peladas",
+            "jogadores": jogadores,
+            "jogadores_json": json.dumps(
+                [{"id": j.id, "apelido": j.apelido} for j in jogadores]
+            ),
+            "cores": _cores(sessao),
+            "posicoes": POSICOES,
+            "hoje": date.today().isoformat(),
+            "erro": erro,
+            "editando": pelada,
+            "pelada_json": json.dumps({
+                "data": pelada.data.isoformat(),
+                "times": [
+                    {"cor_id": cor_id, "jogadores": js}
+                    for cor_id, js in por_cor.items()
+                ],
+                "jogos": [
+                    {"cor_a": j.cor_a_id, "cor_b": j.cor_b_id,
+                     "vencedor": j.cor_vencedora_id}
+                    for j in pelada.partidas
+                ],
+            }),
+        },
+    )
+
+
+@app.post("/pelada/{pelada_id}")
+def atualizar_pelada(
+    pelada_id: int, dados: str = Form(...), sessao: Session = Depends(get_session)
+):
+    pelada = sessao.get(Pelada, pelada_id)
+    if pelada is None:
+        return RedirectResponse("/peladas", 303)
+    try:
+        lanc = Lancamento.model_validate_json(dados)
+    except ValidationError:
+        return RedirectResponse(
+            f"/pelada/{pelada_id}/editar?erro=Nao+entendi+os+dados+enviados", 303
+        )
+    if problema := _criticar(lanc, sessao, editando=pelada_id):
+        return RedirectResponse(
+            f"/pelada/{pelada_id}/editar?erro={quote_plus(problema)}", 303
+        )
+
+    # Escalacao e jogos sao reescritos por inteiro: com uma noite por semana,
+    # comparar o que mudou custaria mais codigo do que refazer.
+    pelada.data = lanc.data
+    for p in list(pelada.participacoes):
+        sessao.delete(p)
+    for j in list(pelada.partidas):
+        sessao.delete(j)
+    sessao.flush()
+    _gravar_conteudo(sessao, pelada, lanc)
     sessao.commit()
-    return RedirectResponse("/", 303)
+    return RedirectResponse(f"/pelada/{pelada_id}", 303)
 
 
 @app.get("/peladas")

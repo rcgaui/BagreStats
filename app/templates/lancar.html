@@ -1,10 +1,18 @@
 {% extends "base.html" %}
 {% block titulo %}Lançar pelada · BagreStats{% endblock %}
 {% block conteudo %}
+{% if editando %}
+<div class="voltar-linha">
+  <a href="/pelada/{{ editando.id }}" class="voltar">← Pelada de {{ editando.data.strftime('%d/%m/%Y') }}</a>
+</div>
+{% endif %}
+
 <div class="topo-pagina">
   <div>
-    <h1>Lançar pelada</h1>
-    <p class="sub">Monte os times, escale quem jogou e registre os jogos da noite.</p>
+    <h1>{{ "Editar pelada" if editando else "Lançar pelada" }}</h1>
+    <p class="sub">{{ "Mude os times, a escalação ou o resultado dos jogos."
+                      if editando else
+                      "Monte os times, escale quem jogou e registre os jogos da noite." }}</p>
   </div>
   <!-- Sair da escalacao e uma acao da PAGINA, nao do cartao do time: fica no
        topo, onde se procura por um voltar. -->
@@ -13,7 +21,7 @@
 
 {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 
-<form method="post" action="/lancar" id="form-pelada">
+<form method="post" action="{{ '/pelada/%d'|format(editando.id) if editando else '/lancar' }}" id="form-pelada">
   <!-- A tela envia a noite inteira num campo JSON: com numero variavel de
        times e jogos, dezenas de campos paralelos desalinhariam sem aviso. -->
   <input type="hidden" name="dados" id="dados">
@@ -74,7 +82,7 @@
     </div>
 
     <div class="linha-salvar">
-      <button type="submit">Salvar pelada</button>
+      <button type="submit">{{ "Salvar alterações" if editando else "Salvar pelada" }}</button>
       <p class="aviso" id="aviso-salvar" hidden></p>
     </div>
   </div>
@@ -85,9 +93,6 @@
       <h2 id="editor-titulo"></h2>
       <div class="acoes-editor">
         <button type="button" class="fraco perigo" id="editor-limpar">Limpar time</button>
-        <!-- Uma saida so: a escalacao ja vale enquanto voce monta, entao um
-             "voltar" ao lado de um "salvar" prometeria um descarte que nao
-             existe. -->
         <button type="button" id="editor-salvar">Salvar time</button>
       </div>
     </div>
@@ -143,6 +148,9 @@
 </div>
 
 <script id="dados-jogadores" type="application/json">{{ jogadores_json|safe }}</script>
+{% if editando %}
+<script id="dados-pelada" type="application/json">{{ pelada_json|safe }}</script>
+{% endif %}
 <script id="dados-cores" type="application/json">
   [{% for c in cores %}{"id":{{ c.id }},"nome":"{{ c.nome }}","codigo":"{{ c.codigo }}"}{{ "," if not loop.last }}{% endfor %}]
 </script>
@@ -180,6 +188,24 @@
     jogos: [],
   });
 
+  // Editando uma pelada que ja existe? Entao o estado inicial vem dela, e nao
+  // do rascunho: sao coisas diferentes e misturar uma na outra bagunçaria as
+  // duas.
+  const dadosPelada = document.getElementById("dados-pelada");
+  const editandoPelada = !!dadosPelada;
+
+  function daPelada(bruto) {
+    const t = timeNovo(bruto.cor_id);
+    for (const j of bruto.jogadores) {
+      if (j.posicao && j.posicao !== "RES") t.campo[j.posicao] = j.id;
+      else t.reservas.push(j.id);
+    }
+    // Pelada antiga foi gravada sem posicao: quem nao tem vaga entra como
+    // reserva para nao sumir da tela.
+    while (t.reservas.length < 2) t.reservas.push(null);
+    return t;
+  }
+
   // ------------------------------------------------------- rascunho salvo
   // Montar uma pelada leva dezenas de cliques. Sem isto, recarregar a pagina
   // ou dar uma olhada na classificacao apagaria tudo.
@@ -195,6 +221,7 @@
     e.times.some((t) => Object.values(t.campo).some(Boolean) || t.reservas.some(Boolean));
 
   function guardarRascunho() {
+    if (editandoPelada) return;
     guardado(() =>
       temConteudo(estado)
         ? localStorage.setItem(CHAVE, JSON.stringify(estado))
@@ -226,8 +253,20 @@
   const tentouEnviar = guardado(() => localStorage.getItem(CHAVE_ENVIO), null);
   if (tentouEnviar && !veioComErro) apagarRascunho();
 
-  const recuperado = lerRascunho();
-  const estado = recuperado || estadoNovo();
+  const recuperado = editandoPelada ? null : lerRascunho();
+  let estado;
+  if (editandoPelada) {
+    const bruto = JSON.parse(dadosPelada.textContent);
+    estado = {
+      data: bruto.data,
+      times: bruto.times.map(daPelada),
+      jogos: bruto.jogos.map((j) => ({
+        corA: j.cor_a, corB: j.cor_b, vencedor: j.vencedor,
+      })),
+    };
+  } else {
+    estado = recuperado || estadoNovo();
+  }
   if (recuperado) {
     // Vaga que ficou sem posicao (formacao mudou) nao pode virar lixo.
     for (const t of estado.times) {
@@ -815,7 +854,7 @@
         // Outra data e outra noite: escalacao e jogos pertencem aquela pelada
         // especifica e nao podem atravessar. As cores dos times ficam, porque
         // sao o costume da pelada, nao dado do dia.
-        if (nova !== estado.data) {
+        if (nova !== estado.data && !editandoPelada) {
           for (const t of estado.times) {
             for (const [codigo] of POSICOES) t.campo[codigo] = null;
             t.reservas = [null, null];
@@ -926,7 +965,7 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharMenus(null); });
   document.getElementById("form-pelada").addEventListener("submit", () => {
     sincronizar();
-    guardado(() => localStorage.setItem(CHAVE_ENVIO, "1"));
+    if (!editandoPelada) guardado(() => localStorage.setItem(CHAVE_ENVIO, "1"));
   });
 
   mesVisivel = new Date(daISO(estado.data).getFullYear(), daISO(estado.data).getMonth(), 1);
