@@ -12,11 +12,6 @@
   <input type="hidden" name="dados" id="dados">
 
   <div id="tela-resumo">
-    <div class="rascunho" id="aviso-rascunho" hidden>
-      <span>Recuperamos a pelada que você tinha começado.</span>
-      <button type="button" class="so-texto" id="descartar-rascunho">Começar do zero</button>
-    </div>
-
     <div class="card" style="padding:18px">
       <label>Data</label>
       <!-- Calendario proprio: o do input[type=date] e desenhado pelo navegador. -->
@@ -244,7 +239,6 @@
   if (tentouEnviar && !veioComErro) apagarRascunho();
 
   const recuperado = lerRascunho();
-  const recuperouAlgo = !!recuperado && temConteudo(recuperado);
   const estado = recuperado || estadoNovo();
   if (recuperado) {
     // Vaga que ficou sem posicao (formacao mudou) nao pode virar lixo.
@@ -921,13 +915,6 @@
     sincronizar();
     guardado(() => localStorage.setItem(CHAVE_ENVIO, "1"));
   });
-
-  document.getElementById("descartar-rascunho").addEventListener("click", () => {
-    apagarRascunho();
-    location.href = "/lancar";
-  });
-
-  document.getElementById("aviso-rascunho").hidden = !recuperouAlgo;
 
   mesVisivel = new Date(daISO(estado.data).getFullYear(), daISO(estado.data).getMonth(), 1);
   mostrarData();
