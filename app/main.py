@@ -228,7 +228,7 @@ def _cadastrar_jogador(sessao: Session, apelido: str) -> tuple[Jogador | None, s
     nome = apelido.strip()
     if not nome:
         return None, "O apelido nao pode ficar vazio"
-    # Comparacao sem diferenciar maiusculas: "bog" e "Bog" seriam duas pessoas
+    # Comparacao sem diferenciar maiusculas: "ze" e "Ze" seriam duas pessoas
     # diferentes na estatistica, que e exatamente a fragmentacao que o id evita.
     ja_existe = sessao.scalar(
         select(Jogador).where(func.lower(Jogador.apelido) == nome.lower())

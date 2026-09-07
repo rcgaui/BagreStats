@@ -235,14 +235,14 @@ def test_cadastra_jogador_e_devolve_o_id(cliente):
 
 
 def test_recusa_apelido_repetido_ignorando_maiusculas(cliente):
-    # "bog" e "Bog" seriam duas pessoas na estatistica - a mesma fragmentacao
+    # "ze" e "Ze" seriam duas pessoas na estatistica - a mesma fragmentacao
     # que o id existe para evitar.
     c, Fabrica = cliente
-    c.post("/api/jogadores", data={"apelido": "Bog"})
-    r = c.post("/api/jogadores", data={"apelido": "  bOg "})
+    c.post("/api/jogadores", data={"apelido": "Ze"})
+    r = c.post("/api/jogadores", data={"apelido": "  zE "})
     assert r.status_code == 422 and "ja esta no elenco" in r.json()["erro"]
     with Fabrica() as s:
-        assert s.query(Jogador).filter(Jogador.apelido.ilike("bog")).count() == 1
+        assert s.query(Jogador).filter(Jogador.apelido.ilike("ze")).count() == 1
 
 
 def test_recusa_apelido_vazio(cliente):
