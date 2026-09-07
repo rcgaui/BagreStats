@@ -1,8 +1,15 @@
 {% extends "base.html" %}
 {% block titulo %}Lançar pelada · BagreStats{% endblock %}
 {% block conteudo %}
-<h1>Lançar pelada</h1>
-<p class="sub">Monte os times, escale quem jogou e registre os jogos da noite.</p>
+<div class="topo-pagina">
+  <div>
+    <h1>Lançar pelada</h1>
+    <p class="sub">Monte os times, escale quem jogou e registre os jogos da noite.</p>
+  </div>
+  <!-- Sair da escalacao e uma acao da PAGINA, nao do cartao do time: fica no
+       topo, onde se procura por um voltar. -->
+  <button type="button" class="fraco" id="editor-voltar" hidden>← Voltar</button>
+</div>
 
 {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 
@@ -486,8 +493,12 @@
   function abrirEditor(i) {
     editando = i;
     desarmarLimpar();
+    // Copia do estado ao entrar: e o que da sentido ao "voltar" existir ao
+    // lado do "salvar". Sem isto os dois botoes fariam a mesma coisa.
+    comoEstava = JSON.parse(JSON.stringify(estado.times[i]));
     document.getElementById("tela-resumo").hidden = true;
     document.getElementById("editor").hidden = false;
+    document.getElementById("editor-voltar").hidden = false;
     const cor = corPorId[estado.times[i].corId];
     document.getElementById("editor-titulo").innerHTML =
       '<span class="bola" style="background:' + cor.codigo + '"></span>Time ' +
@@ -496,10 +507,19 @@
     renderReservas();
   }
 
+  let comoEstava = null;
+
+  function descartarEdicao() {
+    if (comoEstava) estado.times[editando] = comoEstava;
+    fecharEditor();
+  }
+
   function fecharEditor() {
+    comoEstava = null;
     editando = null;
     desarmarLimpar();
     document.getElementById("editor").hidden = true;
+    document.getElementById("editor-voltar").hidden = true;
     document.getElementById("tela-resumo").hidden = false;
     renderTudo();
   }
@@ -892,6 +912,7 @@
   }
 
   document.getElementById("editor-salvar").addEventListener("click", fecharEditor);
+  document.getElementById("editor-voltar").addEventListener("click", descartarEdicao);
   document.getElementById("editor-limpar").addEventListener("click", limparTime);
   document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
   document.getElementById("cadastro-fechar").addEventListener("click", fecharPopup);
