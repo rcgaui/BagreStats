@@ -12,6 +12,11 @@
   <input type="hidden" name="dados" id="dados">
 
   <div id="tela-resumo">
+    <div class="rascunho" id="aviso-rascunho" hidden>
+      <span>Recuperamos a pelada que você tinha começado.</span>
+      <button type="button" class="so-texto" id="descartar-rascunho">Começar do zero</button>
+    </div>
+
     <div class="card" style="padding:18px">
       <label>Data</label>
       <!-- Calendario proprio: o do input[type=date] e desenhado pelo navegador. -->
@@ -78,7 +83,10 @@
       <h2 id="editor-titulo"></h2>
       <div class="acoes-editor">
         <button type="button" class="fraco perigo" id="editor-limpar">Limpar time</button>
-        <button type="button" class="fraco" id="editor-voltar">← Voltar</button>
+        <!-- Uma saida so: a escalacao ja vale enquanto voce monta, entao um
+             "voltar" ao lado de um "salvar" prometeria um descarte que nao
+             existe. -->
+        <button type="button" id="editor-salvar">Salvar time</button>
       </div>
     </div>
     <div class="campo" id="campo">
@@ -182,12 +190,71 @@
     reservas: [null, null],
   });
 
-  const estado = {
+  const estadoNovo = () => ({
     data: new Date().toISOString().slice(0, 10),
     times: [timeNovo(cores.find((c) => c.nome === "PRETO")?.id ?? cores[0].id),
             timeNovo(cores.find((c) => c.nome === "BRANCO")?.id ?? cores[1].id)],
     jogos: [],
-  };
+  });
+
+  // ------------------------------------------------------- rascunho salvo
+  // Montar uma pelada leva dezenas de cliques. Sem isto, recarregar a pagina
+  // ou dar uma olhada na classificacao apagaria tudo.
+  const CHAVE = "bagrestats:rascunho";
+  const CHAVE_ENVIO = "bagrestats:enviando";
+  const guardado = (fn, padrao) => { try { return fn(); } catch { return padrao; } };
+
+  // Uma pelada intocada nao e rascunho: gravar o estado inicial faria a tela
+  // anunciar "recuperamos o que voce comecou" para quem nao comecou nada.
+  const temConteudo = (e) =>
+    e.jogos.length > 0 ||
+    e.times.length > 2 ||
+    e.times.some((t) => Object.values(t.campo).some(Boolean) || t.reservas.some(Boolean));
+
+  function guardarRascunho() {
+    guardado(() =>
+      temConteudo(estado)
+        ? localStorage.setItem(CHAVE, JSON.stringify(estado))
+        : localStorage.removeItem(CHAVE)
+    );
+  }
+
+  function lerRascunho() {
+    const cru = guardado(() => localStorage.getItem(CHAVE), null);
+    if (!cru) return null;
+    const d = guardado(() => JSON.parse(cru), null);
+    // So aceita o que tem a forma esperada: um rascunho de versao antiga da
+    // tela quebraria tudo silenciosamente.
+    const valido = d && Array.isArray(d.times) && Array.isArray(d.jogos) &&
+      typeof d.data === "string" &&
+      d.times.every((t) => t && typeof t.corId === "number" &&
+                    t.campo && Array.isArray(t.reservas)) &&
+      d.times.every((t) => corPorId[t.corId]);
+    return valido ? d : null;
+  }
+
+  function apagarRascunho() {
+    guardado(() => { localStorage.removeItem(CHAVE); localStorage.removeItem(CHAVE_ENVIO); });
+  }
+
+  // A pelada anterior foi salva quando o envio saiu e a pagina nao voltou com
+  // erro: nesse caso o rascunho antigo nao serve mais.
+  const veioComErro = new URLSearchParams(location.search).has("erro");
+  const tentouEnviar = guardado(() => localStorage.getItem(CHAVE_ENVIO), null);
+  if (tentouEnviar && !veioComErro) apagarRascunho();
+
+  const recuperado = lerRascunho();
+  const recuperouAlgo = !!recuperado && temConteudo(recuperado);
+  const estado = recuperado || estadoNovo();
+  if (recuperado) {
+    // Vaga que ficou sem posicao (formacao mudou) nao pode virar lixo.
+    for (const t of estado.times) {
+      for (const [codigo] of POSICOES) {
+        if (!(codigo in t.campo)) t.campo[codigo] = null;
+      }
+    }
+    guardado(() => localStorage.removeItem(CHAVE_ENVIO));
+  }
 
   let editando = null;   // indice do time aberto no editor
   let popupAlvo = null;  // {time, tipo:'campo'|'reserva', chave}
@@ -805,6 +872,7 @@
         cor_a: j.corA, cor_b: j.corB, vencedor: j.vencedor,
       })),
     });
+    guardarRascunho();
     const p = problema();
     document.querySelector('#form-pelada button[type="submit"]').disabled = !!p;
     const aviso = document.getElementById("aviso-salvar");
@@ -818,7 +886,7 @@
     sincronizar();
   }
 
-  document.getElementById("editor-voltar").addEventListener("click", fecharEditor);
+  document.getElementById("editor-salvar").addEventListener("click", fecharEditor);
   document.getElementById("editor-limpar").addEventListener("click", limparTime);
   document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
   document.getElementById("cadastro-fechar").addEventListener("click", fecharPopup);
@@ -849,7 +917,17 @@
     if (!e.target.closest(".seletor")) fecharMenus(null);
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharMenus(null); });
-  document.getElementById("form-pelada").addEventListener("submit", sincronizar);
+  document.getElementById("form-pelada").addEventListener("submit", () => {
+    sincronizar();
+    guardado(() => localStorage.setItem(CHAVE_ENVIO, "1"));
+  });
+
+  document.getElementById("descartar-rascunho").addEventListener("click", () => {
+    apagarRascunho();
+    location.href = "/lancar";
+  });
+
+  document.getElementById("aviso-rascunho").hidden = !recuperouAlgo;
 
   mesVisivel = new Date(daISO(estado.data).getFullYear(), daISO(estado.data).getMonth(), 1);
   mostrarData();
