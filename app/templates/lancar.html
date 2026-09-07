@@ -110,16 +110,41 @@
 <!-- Popup de escolha de jogador para uma vaga -->
 <div class="popup-fundo" id="popup" hidden>
   <div class="popup-caixa">
-    <div class="cabeca">
-      <div class="cabeca-linha">
-        <h3 id="popup-titulo">Vaga</h3>
-        <button type="button" class="fechar" id="popup-fechar" aria-label="Fechar">×</button>
+    <!-- Tela 1: escolher quem ja esta no elenco -->
+    <div id="modo-busca">
+      <div class="cabeca">
+        <div class="cabeca-linha">
+          <h3 id="popup-titulo">Vaga</h3>
+          <button type="button" class="fechar" id="popup-fechar" aria-label="Fechar">×</button>
+        </div>
+        <input type="search" id="popup-busca" placeholder="Buscar jogador..." style="font-size:16px">
       </div>
-      <input type="search" id="popup-busca" placeholder="Buscar ou cadastrar jogador..." style="font-size:16px">
-      <p class="popup-aviso" id="popup-aviso" hidden></p>
+      <button type="button" class="remover-jogador" id="popup-remover" hidden>Remover desta vaga</button>
+      <div class="popup-lista" id="popup-lista"></div>
     </div>
-    <button type="button" class="remover-jogador" id="popup-remover" hidden>Remover desta vaga</button>
-    <div class="popup-lista" id="popup-lista"></div>
+
+    <!-- Tela 2: cadastrar alguem novo. Troca a tela inteira em vez de dividir
+         a barra de busca em dois papeis: buscar e cadastrar sao acoes
+         diferentes e cada uma fica com o seu campo. -->
+    <div id="modo-cadastro" hidden>
+      <div class="cabeca">
+        <div class="cabeca-linha">
+          <h3>Novo jogador</h3>
+          <button type="button" class="fechar" id="cadastro-fechar" aria-label="Fechar">×</button>
+        </div>
+      </div>
+      <div class="corpo-cadastro">
+        <label for="novo-apelido">Apelido</label>
+        <input type="text" id="novo-apelido" autocomplete="off" placeholder="Como chamam ele"
+               style="font-size:16px;width:100%">
+        <p class="dica" id="cadastro-destino"></p>
+        <p class="popup-aviso" id="popup-aviso" hidden></p>
+        <div class="acoes-cadastro">
+          <button type="button" class="fraco" id="cadastro-voltar">← Voltar</button>
+          <button type="button" id="cadastro-confirmar">Cadastrar e escalar</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -483,6 +508,10 @@
     document.getElementById("popup-titulo").textContent =
       "Time " + letra(alvo.time) + " · " + rotulo;
     document.getElementById("popup-remover").hidden = !atual;
+    // Sempre abre na busca: o cadastro e um desvio, nao o estado inicial.
+    document.getElementById("modo-cadastro").hidden = true;
+    document.getElementById("modo-busca").hidden = false;
+    avisoPopup(null);
     const busca = document.getElementById("popup-busca");
     busca.value = "";
     renderListaPopup("");
@@ -501,31 +530,21 @@
 
     // Cadastrar sem sair da tela: quem chega de ultima hora entra no elenco
     // aqui mesmo, sem perder a escalacao ja montada.
-    const jaExiste = jogadores.some(
-      (j) => j.apelido.toLowerCase() === busca.toLowerCase()
-    );
-    if (!jaExiste) {
-      const novo = document.createElement("button");
-      novo.type = "button";
-      novo.className = "cadastrar";
-      novo.innerHTML =
-        '<span class="mais">+</span><span class="nome">' +
-        (busca ? "Cadastrar “" + escapar(busca) + "”" : "Cadastrar novo jogador") +
-        "</span>";
-      novo.addEventListener("click", () => {
-        if (!busca) {
-          document.getElementById("popup-busca").focus();
-          avisoPopup("Digite o apelido do jogador aí em cima.");
-          return;
-        }
-        cadastrarJogador(busca);
-      });
-      lista.appendChild(novo);
-    }
+    const novo = document.createElement("button");
+    novo.type = "button";
+    novo.className = "cadastrar";
+    novo.innerHTML = '<span class="mais">+</span><span class="nome">Cadastrar novo jogador</span>';
+    // Leva o que ja foi digitado na busca: quem digitou o nome inteiro e nao
+    // achou nao deveria ter que digitar de novo.
+    novo.addEventListener("click", () => abrirCadastro(busca));
+    lista.appendChild(novo);
 
-    if (!livres.length && jaExiste) {
+    if (!livres.length) {
       lista.insertAdjacentHTML(
-        "beforeend", '<div class="vazio">Esse jogador já está escalado.</div>'
+        "beforeend",
+        '<div class="vazio">' +
+          (busca ? "Ninguém no elenco com esse nome." : "Todo mundo já está escalado.") +
+          "</div>"
       );
     }
     for (const j of livres) {
@@ -537,18 +556,47 @@
     }
   }
 
-  const escapar = (t) =>
-    t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
   function avisoPopup(texto) {
     const p = document.getElementById("popup-aviso");
     p.textContent = texto || "";
     p.hidden = !texto;
   }
 
-  async function cadastrarJogador(apelido) {
+  // O popup troca de tela: a de busca sai, a de cadastro entra. A vaga que
+  // estava sendo preenchida continua guardada em popupAlvo.
+  function abrirCadastro(nomeInicial) {
     avisoPopup(null);
+    document.getElementById("modo-busca").hidden = true;
+    document.getElementById("modo-cadastro").hidden = false;
+    document.getElementById("cadastro-destino").textContent =
+      "Entra direto como " + rotuloDaVaga(popupAlvo).toLowerCase() +
+      " do time " + letra(popupAlvo.time) + ".";
+    const campo = document.getElementById("novo-apelido");
+    campo.value = nomeInicial || "";
+    campo.focus();
+    campo.select();
+  }
+
+  function voltarParaBusca() {
+    avisoPopup(null);
+    document.getElementById("modo-cadastro").hidden = true;
+    document.getElementById("modo-busca").hidden = false;
+    document.getElementById("popup-busca").focus();
+  }
+
+  function rotuloDaVaga(alvo) {
+    return alvo.tipo === "campo"
+      ? POSICOES.find((p) => p[0] === alvo.chave)[1]
+      : "Reserva " + (alvo.chave + 1);
+  }
+
+  async function cadastrarJogador() {
+    const apelido = document.getElementById("novo-apelido").value.trim();
+    if (!apelido) { avisoPopup("Digite o apelido."); return; }
     const alvo = popupAlvo;  // a resposta demora; o alvo pode mudar no meio
+    const botao = document.getElementById("cadastro-confirmar");
+    botao.disabled = true;
+    avisoPopup(null);
     try {
       const corpo = new FormData();
       corpo.append("apelido", apelido);
@@ -557,10 +605,14 @@
       if (!r.ok) { avisoPopup(dados.erro || "Não deu para cadastrar."); return; }
       jogadores.push(dados);
       jogadores.sort((a, b) => a.apelido.localeCompare(b.apelido, "pt-BR"));
+      document.getElementById("modo-cadastro").hidden = true;
+      document.getElementById("modo-busca").hidden = false;
       popupAlvo = alvo;
-      escolherJogador(dados.id);  // ja entra na vaga que estava aberta
+      escolherJogador(dados.id);  // ja ocupa a vaga que estava aberta
     } catch {
       avisoPopup("Não deu para falar com o servidor.");
+    } finally {
+      botao.disabled = false;
     }
   }
 
@@ -729,6 +781,14 @@
 
   document.getElementById("editor-voltar").addEventListener("click", fecharEditor);
   document.getElementById("popup-fechar").addEventListener("click", fecharPopup);
+  document.getElementById("cadastro-fechar").addEventListener("click", fecharPopup);
+  document.getElementById("cadastro-voltar").addEventListener("click", voltarParaBusca);
+  document.getElementById("cadastro-confirmar").addEventListener("click", cadastrarJogador);
+  document.getElementById("novo-apelido").addEventListener("input", () => avisoPopup(null));
+  document.getElementById("novo-apelido").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); cadastrarJogador(); }
+    if (e.key === "Escape") { e.preventDefault(); voltarParaBusca(); }
+  });
   document.getElementById("popup-remover").addEventListener("click", removerJogador);
   document.getElementById("popup-busca").addEventListener("input", (e) => {
     avisoPopup(null);
@@ -740,9 +800,7 @@
     if (e.key !== "Enter") return;
     e.preventDefault();
     const primeiro = document.querySelector("#popup-lista button:not(.cadastrar)");
-    const cadastrar = document.querySelector("#popup-lista button.cadastrar");
     if (primeiro) primeiro.click();
-    else if (cadastrar) cadastrar.click();
   });
   document.getElementById("popup").addEventListener("click", (e) => {
     if (e.target.id === "popup") fecharPopup();
