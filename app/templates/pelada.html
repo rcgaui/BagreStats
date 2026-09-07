@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block titulo %}Pelada de {{ pelada.data.strftime('%d/%m/%Y') }} · BagreStats{% endblock %}
+{% block conteudo %}
+
+<div class="voltar-linha">
+  <a href="/peladas" class="voltar">← Partidas</a>
+</div>
+
+<h1>{{ pelada.data.strftime('%d/%m/%Y') }}</h1>
+<p class="sub">{{ pelada.partidas|length }} jogo{{ 's' if pelada.partidas|length != 1 }} ·
+   {{ times|length }} times · {{ pelada.participacoes|length }} jogadores</p>
+
+<div class="card">
+  <h2>Jogos da noite</h2>
+  {% if pelada.partidas %}
+    {% for jogo in pelada.partidas %}
+    <div class="jogo-lido">
+      <span class="ordem">{{ jogo.ordem }}</span>
+      <span class="lado {{ 'venceu' if jogo.cor_vencedora_id == jogo.cor_a_id }}">
+        <span class="bola" style="background:{{ jogo.cor_a.codigo }}"></span>{{ jogo.cor_a.nome }}
+      </span>
+      <span class="resultado">{{ 'empate' if jogo.empate else '×' }}</span>
+      <span class="lado {{ 'venceu' if jogo.cor_vencedora_id == jogo.cor_b_id }}">
+        {{ jogo.cor_b.nome }}<span class="bola" style="background:{{ jogo.cor_b.codigo }};margin:0 0 0 8px"></span>
+      </span>
+    </div>
+    {% endfor %}
+  {% else %}<div class="vazio">Essa noite não tem jogo registrado.</div>{% endif %}
+</div>
+
+<div class="escalacoes">
+  {% for t in times %}
+  <div class="card">
+    <h2>
+      <span class="bola" style="background:{{ t.cor.codigo }}"></span>{{ t.cor.nome }}
+      <span class="retro">{{ t.vitorias }}V {{ t.empates }}E {{ t.derrotas }}D</span>
+    </h2>
+    <div class="campo-lido">
+      <div class="campo">
+        {% include "_campo.html" %}
+        {% for p in t.titulares %}
+        {% set coord = {'GOL':(50,86),'ZAG':(50,71),'LAT_E':(15,57),'LAT_D':(85,57),
+                        'MEI_E':(29,37),'MEI_D':(71,37),'ATA':(50,17)} %}
+        {% if p.posicao in coord %}
+        <div class="vaga ocupada" style="left:{{ coord[p.posicao][0] }}%;top:{{ coord[p.posicao][1] }}%">
+          <span class="bolha">{{ p.jogador.apelido|iniciais }}</span>
+          <span class="rotulo">{{ p.jogador.apelido }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {# Pelada antiga foi registrada sem posicao: o campo fica vazio e a lista
+         abaixo e a unica forma honesta de mostrar quem jogou. #}
+      {% set sem_posicao = t.titulares|rejectattr('posicao')|list %}
+      {% if sem_posicao %}
+      <div class="sem-posicao">
+        <div class="rotulo-secao">Em campo</div>
+        <div class="lista-nomes">
+          {% for p in sem_posicao %}
+          <a href="/jogador/{{ p.jogador.id }}" class="chip">
+            <span class="av" style="background:{{ p.jogador.apelido|cor_do_apelido }}">{{ p.jogador.apelido|iniciais }}</span>
+            {{ p.jogador.apelido }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% if t.reservas %}
+      <div class="sem-posicao">
+        <div class="rotulo-secao">Reservas</div>
+        <div class="lista-nomes">
+          {% for p in t.reservas %}
+          <a href="/jogador/{{ p.jogador.id }}" class="chip">
+            <span class="av" style="background:{{ p.jogador.apelido|cor_do_apelido }}">{{ p.jogador.apelido|iniciais }}</span>
+            {{ p.jogador.apelido }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

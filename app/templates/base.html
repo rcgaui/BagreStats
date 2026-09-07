@@ -298,6 +298,58 @@
   .duelo .placar{font-weight:800;font-size:19px;letter-spacing:-.02em}
   .duelo .conta{color:var(--fraco);font-size:12px;font-weight:500}
 
+  /* ---------- partidas: lista de noites ---------- */
+  .voltar-linha{display:flex;align-items:center;justify-content:space-between;
+                gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .voltar{color:var(--fraco);text-decoration:none;font-size:13.5px;font-weight:600}
+  .voltar:hover{color:var(--txt)}
+  .botao-link{background:transparent;border:1px solid var(--linha);color:var(--txt);
+              text-decoration:none;font-size:13px;font-weight:600;padding:9px 15px;
+              border-radius:9px}
+  .botao-link:hover{border-color:var(--acento);color:var(--acento)}
+
+  .cartao-noite{display:block;text-decoration:none;color:var(--txt);padding:18px;
+                transition:border-color .15s,background .15s}
+  .cartao-noite:hover{border-color:var(--acento);background:var(--sobe)}
+  .noite-topo{display:flex;align-items:baseline;justify-content:space-between;
+              gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  .noite-topo b{font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .noite-topo .conta{color:var(--fraco);font-size:13px}
+  .noite-times{display:flex;gap:9px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:#0E1116;
+        border:1px solid var(--linha);border-radius:99px;padding:6px 13px;
+        font-size:12.5px;color:var(--fraco);text-decoration:none}
+  .chip b{color:var(--txt);font-weight:600;font-size:12px}
+  a.chip:hover{border-color:var(--acento);color:var(--txt)}
+  .chip .av{width:20px;height:20px;font-size:9px}
+
+  /* ---------- pelada: um jogo, so leitura ---------- */
+  .jogo-lido{display:flex;align-items:center;gap:14px;padding:13px 18px;font-size:14px}
+  .jogo-lido + .jogo-lido{border-top:1px solid var(--linha)}
+  .jogo-lido .ordem{width:22px;height:22px;border-radius:50%;background:var(--linha);
+                    color:var(--fraco);font-size:11px;font-weight:700;flex:none;
+                    display:grid;place-items:center}
+  .jogo-lido .lado{flex:1;display:flex;align-items:center;color:var(--fraco)}
+  .jogo-lido .lado:last-of-type{justify-content:flex-end}
+  /* Quem venceu fica cheio; quem perdeu, apagado. E a leitura mais rapida do placar. */
+  .jogo-lido .lado.venceu{color:var(--txt);font-weight:700}
+  .jogo-lido .resultado{color:var(--fraco);font-size:11px;text-transform:uppercase;
+                        letter-spacing:.09em;flex:none}
+
+  .escalacoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+              gap:18px;align-items:start}
+  .escalacoes .card h2{display:flex;align-items:center;gap:0}
+  .escalacoes .card h2 .retro{margin-left:auto;color:var(--txt);letter-spacing:0;
+                              text-transform:none;font-size:12px}
+  .campo-lido{padding:18px}
+  .campo-lido .campo{max-width:100%}
+  /* So leitura: nada aqui responde a clique, entao nao pode parecer clicavel. */
+  .campo-lido .vaga{cursor:default}
+  .campo-lido .vaga .bolha{border-style:solid}
+  .campo-lido .vaga:hover .bolha{transform:none;border-color:var(--acento)}
+  .sem-posicao{margin-top:16px}
+  .lista-nomes{display:flex;gap:8px;flex-wrap:wrap}
+
   /* ---------- lancar pelada ---------- */
   .rodape-card{padding:14px 18px;border-top:1px solid var(--linha)}
   /* Acao secundaria que nao merece a moldura de um botao. */
@@ -492,6 +544,7 @@
 <header><nav>
   <div class="marca">Bagre<span>Stats</span></div>
   <a href="/" class="{{ 'ativo' if pagina=='tabela' }}">Classificação</a>
+  <a href="/peladas" class="{{ 'ativo' if pagina=='peladas' }}">Partidas</a>
   <a href="/lancar" class="{{ 'ativo' if pagina=='lancar' }}">Lançar pelada</a>
   <a href="/confrontos" class="{{ 'ativo' if pagina=='confrontos' }}">Confrontos</a>
   <a href="/jogadores" class="{{ 'ativo' if pagina=='jogadores' }}">Elenco</a>

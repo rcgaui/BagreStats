@@ -187,6 +187,36 @@ def salvar_pelada(dados: str = Form(...), sessao: Session = Depends(get_session)
     return RedirectResponse("/", 303)
 
 
+@app.get("/peladas")
+def lista_peladas(request: Request, sessao: Session = Depends(get_session)):
+    peladas = stats.peladas(sessao)
+    return templates.TemplateResponse(
+        "peladas.html",
+        {
+            "request": request,
+            "pagina": "peladas",
+            "peladas": [(p, stats.times_da_noite(p)) for p in peladas],
+        },
+    )
+
+
+@app.get("/pelada/{pelada_id}")
+def ver_pelada(pelada_id: int, request: Request, sessao: Session = Depends(get_session)):
+    pelada = sessao.get(Pelada, pelada_id)
+    if pelada is None:
+        return RedirectResponse("/peladas", 303)
+    return templates.TemplateResponse(
+        "pelada.html",
+        {
+            "request": request,
+            "pagina": "peladas",
+            "pelada": pelada,
+            "times": stats.times_da_noite(pelada),
+            "posicoes": POSICOES,
+        },
+    )
+
+
 @app.get("/jogador/{jogador_id}")
 def ver_jogador(jogador_id: int, request: Request, sessao: Session = Depends(get_session)):
     perfil = stats.perfil(sessao, jogador_id)

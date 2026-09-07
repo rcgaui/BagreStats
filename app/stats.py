@@ -232,3 +232,55 @@ def confrontos(sessao: Session) -> list[Confronto]:
         else:
             conf.vitorias_b += 1
     return sorted(resultado.values(), key=lambda c: c.jogos, reverse=True)
+
+
+@dataclass
+class TimeDaNoite:
+    """Um time como ele apareceu numa noite: a cor e quem vestiu."""
+
+    cor: Cor
+    titulares: list[Participacao] = field(default_factory=list)
+    reservas: list[Participacao] = field(default_factory=list)
+    vitorias: int = 0
+    empates: int = 0
+    derrotas: int = 0
+
+    @property
+    def jogos(self) -> int:
+        return self.vitorias + self.empates + self.derrotas
+
+
+def peladas(sessao: Session) -> list[Pelada]:
+    """As noites, da mais recente para a mais antiga."""
+    return list(reversed(_peladas(sessao)))
+
+
+def times_da_noite(pelada: Pelada) -> list[TimeDaNoite]:
+    """Como cada time se saiu naquela noite, na ordem em que entrou em campo."""
+    from app.models import POSICOES
+
+    ordem_da_vaga = {codigo: i for i, (codigo, _) in enumerate(POSICOES)}
+    times: dict[int, TimeDaNoite] = {}
+    for p in pelada.participacoes:
+        time = times.setdefault(p.cor_id, TimeDaNoite(cor=p.cor))
+        (time.reservas if p.posicao == "RES" else time.titulares).append(p)
+
+    for time in times.values():
+        # Sem posicao (peladas antigas) vai para o fim, sem quebrar a ordem.
+        time.titulares.sort(key=lambda p: ordem_da_vaga.get(p.posicao or "", 99))
+        time.reservas.sort(key=lambda p: p.jogador.apelido)
+
+    for jogo in pelada.partidas:
+        for cor_id in jogo.cores():
+            time = times.get(cor_id)
+            if time is None:
+                continue
+            resultado = jogo.resultado_de(cor_id)
+            if resultado == VITORIA:
+                time.vitorias += 1
+            elif resultado == EMPATE:
+                time.empates += 1
+            else:
+                time.derrotas += 1
+
+    return sorted(times.values(), key=lambda t: (-t.vitorias, -t.empates, t.cor.nome))

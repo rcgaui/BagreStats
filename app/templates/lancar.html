@@ -92,26 +92,7 @@
       </div>
     </div>
     <div class="campo" id="campo">
-      <!-- Linhas do campo. O gol do time fica EMBAIXO, do mesmo lado do
-           goleiro: e a visao de quem escala o proprio time. -->
-      <svg class="linhas" viewBox="0 0 75 100" aria-hidden="true">
-        <rect x="3" y="5" width="69" height="90" stroke/>
-        <line x1="3" y1="50" x2="72" y2="50" stroke/>
-        <circle cx="37.5" cy="50" r="9" stroke/>
-        <circle cx="37.5" cy="50" r="0.9" data-cheio/>
-
-        <rect x="17" y="79" width="41" height="16" stroke/>
-        <rect x="28.5" y="88.5" width="18" height="6.5" stroke/>
-        <circle cx="37.5" cy="85" r="0.9" data-cheio/>
-        <path d="M31.1 79a9 9 0 0 0 12.8 0" stroke/>
-        <rect x="30.5" y="95" width="14" height="2.6" data-gol/>
-
-        <rect x="17" y="5" width="41" height="16" stroke/>
-        <rect x="28.5" y="5" width="18" height="6.5" stroke/>
-        <circle cx="37.5" cy="15" r="0.9" data-cheio/>
-        <path d="M31.1 21a9 9 0 0 1 12.8 0" stroke/>
-        <rect x="30.5" y="2.4" width="14" height="2.6" data-gol/>
-      </svg>
+      {% include "_campo.html" %}
     </div>
     <div class="reservas">
       <div class="rotulo-secao">Reservas</div>

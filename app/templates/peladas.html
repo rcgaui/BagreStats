@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Partidas · BagreStats{% endblock %}
+{% block conteudo %}
+<h1>Partidas</h1>
+<p class="sub">Cada noite de pelada, com os times que entraram e como cada um se saiu.</p>
+
+{% if peladas %}
+  {% for pelada, times in peladas %}
+  <a class="card cartao-noite" href="/pelada/{{ pelada.id }}">
+    <div class="noite-topo">
+      <b>{{ pelada.data.strftime('%d/%m/%Y') }}</b>
+      <span class="conta">{{ pelada.partidas|length }} jogo{{ 's' if pelada.partidas|length != 1 }} ·
+        {{ pelada.participacoes|length }} jogadores</span>
+    </div>
+    <div class="noite-times">
+      {% for t in times %}
+      <span class="chip">
+        <span class="bola" style="background:{{ t.cor.codigo }}"></span>{{ t.cor.nome }}
+        <b>{{ t.vitorias }}V {{ t.empates }}E {{ t.derrotas }}D</b>
+      </span>
+      {% endfor %}
+    </div>
+  </a>
+  {% endfor %}
+{% else %}
+<div class="card"><div class="vazio">
+  Nenhuma pelada registrada ainda. <a href="/lancar" style="color:var(--acento)">Lançar a primeira</a>
+</div></div>
+{% endif %}
+{% endblock %}
