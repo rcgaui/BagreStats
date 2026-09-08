@@ -298,6 +298,19 @@
   .duelo .placar{font-weight:800;font-size:19px;letter-spacing:-.02em}
   .duelo .conta{color:var(--fraco);font-size:12px;font-weight:500}
 
+  /* ---------- um jogo: o placar no topo ---------- */
+  .placar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:6px}
+  .lado-placar{display:flex;align-items:center;gap:10px;font-size:22px;
+               color:var(--fraco)}
+  .lado-placar b{font-weight:700;letter-spacing:-.02em}
+  .lado-placar.venceu{color:var(--txt)}
+  .lado-placar .bola{width:15px;height:15px;margin:0}
+  .placar .versus{color:var(--fraco);font-size:11px;text-transform:uppercase;
+                  letter-spacing:.09em}
+  .fita{background:var(--acento-fundo);color:var(--verde);font-size:10px;
+        font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+        padding:4px 9px;border-radius:99px}
+
   /* ---------- partidas: lista de noites ---------- */
   .voltar-linha{display:flex;align-items:center;justify-content:space-between;
                 gap:12px;margin-bottom:18px;flex-wrap:wrap}
@@ -338,11 +351,10 @@
   .confronto .lado.r-d .selo-jogo{color:var(--vermelho)}
 
   /* ---------- pelada: um jogo, so leitura ---------- */
-  .jogo-lido{display:flex;align-items:center;gap:14px;padding:13px 18px;font-size:14px}
+  .jogo-lido{display:flex;align-items:center;gap:14px;padding:14px 18px;font-size:14px;
+             text-decoration:none;color:var(--txt);transition:background .12s}
   .jogo-lido + .jogo-lido{border-top:1px solid var(--linha)}
-  .jogo-lido .ordem{width:22px;height:22px;border-radius:50%;background:var(--linha);
-                    color:var(--fraco);font-size:11px;font-weight:700;flex:none;
-                    display:grid;place-items:center}
+  .jogo-lido:hover{background:var(--sobe)}
   .jogo-lido .lado{flex:1;display:flex;align-items:center;color:var(--fraco)}
   .jogo-lido .lado:last-of-type{justify-content:flex-end}
   /* Quem venceu fica cheio; quem perdeu, apagado. E a leitura mais rapida do placar. */

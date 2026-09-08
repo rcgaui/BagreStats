@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}{{ partida.cor_a.nome }} × {{ partida.cor_b.nome }} · BagreStats{% endblock %}
+{% block conteudo %}
+
+<div class="voltar-linha">
+  <a href="/pelada/{{ partida.pelada_id }}" class="voltar">
+    ← Pelada de {{ partida.pelada.data.strftime('%d/%m/%Y') }}
+  </a>
+</div>
+
+<div class="placar">
+  {% for cor in [partida.cor_a, partida.cor_b] %}
+  {% set venceu = partida.cor_vencedora_id == cor.id %}
+  <div class="lado-placar {{ 'venceu' if venceu }}">
+    <span class="bola" style="background:{{ cor.codigo }}"></span>
+    <b>{{ cor.nome }}</b>
+    {% if venceu %}<span class="fita">Venceu</span>{% endif %}
+  </div>
+  {% if loop.first %}<span class="versus">{{ 'empate' if partida.empate else '×' }}</span>{% endif %}
+  {% endfor %}
+</div>
+<p class="sub">Jogo {{ partida.ordem }} da noite de {{ partida.pelada.data.strftime('%d/%m/%Y') }}</p>
+
+<div class="escalacoes">
+  {% for t in times %}
+  {% include "_escalacao.html" %}
+  {% endfor %}
+</div>
+{% endblock %}

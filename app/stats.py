@@ -255,8 +255,8 @@ def peladas(sessao: Session) -> list[Pelada]:
     return list(reversed(_peladas(sessao)))
 
 
-def times_da_noite(pelada: Pelada) -> list[TimeDaNoite]:
-    """Como cada time se saiu naquela noite, na ordem em que entrou em campo."""
+def _escalacoes(pelada: Pelada) -> dict[int, TimeDaNoite]:
+    """Quem vestiu cada cor naquela noite, sem nenhum resultado ainda."""
     from app.models import POSICOES
 
     ordem_da_vaga = {codigo: i for i, (codigo, _) in enumerate(POSICOES)}
@@ -269,7 +269,12 @@ def times_da_noite(pelada: Pelada) -> list[TimeDaNoite]:
         # Sem posicao (peladas antigas) vai para o fim, sem quebrar a ordem.
         time.titulares.sort(key=lambda p: ordem_da_vaga.get(p.posicao or "", 99))
         time.reservas.sort(key=lambda p: p.jogador.apelido)
+    return times
 
+
+def times_da_noite(pelada: Pelada) -> list[TimeDaNoite]:
+    """Como cada time se saiu na noite inteira, do que mais venceu ao que menos."""
+    times = _escalacoes(pelada)
     for jogo in pelada.partidas:
         for cor_id in jogo.cores():
             time = times.get(cor_id)
@@ -282,5 +287,28 @@ def times_da_noite(pelada: Pelada) -> list[TimeDaNoite]:
                 time.empates += 1
             else:
                 time.derrotas += 1
-
     return sorted(times.values(), key=lambda t: (-t.vitorias, -t.empates, t.cor.nome))
+
+
+def times_da_partida(partida: Partida) -> list[TimeDaNoite]:
+    """Os dois times daquele jogo, na ordem em que se enfrentaram.
+
+    Numa noite de tres times, so dois jogam cada partida: os outros nao tem o
+    que fazer nesta tela. O retrospecto aqui e o resultado DESTE jogo, nao o
+    da noite, senao o numero contradiria o placar logo acima dele.
+    """
+    times = _escalacoes(partida.pelada)
+    escalados = []
+    for cor_id in partida.cores():
+        time = times.get(cor_id)
+        if time is None:
+            continue
+        resultado = partida.resultado_de(cor_id)
+        if resultado == VITORIA:
+            time.vitorias = 1
+        elif resultado == EMPATE:
+            time.empates = 1
+        else:
+            time.derrotas = 1
+        escalados.append(time)
+    return escalados

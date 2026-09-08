@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base, get_session
 from app.main import app
+from app import stats
 from app.models import Cor, Jogador, Partida, Pelada
 from tests.test_lancamento import _noite, _time
 
@@ -133,3 +134,49 @@ def test_pelada_inexistente_volta_para_a_lista(cliente):
     c, _ = cliente
     assert c.get("/pelada/999/editar").headers["location"] == "/peladas"
     assert c.post("/pelada/999", data=_noite()).headers["location"] == "/peladas"
+
+
+# ------------------------------------------------- ver um jogo especifico
+
+def test_a_tela_do_jogo_mostra_so_os_dois_times_que_jogaram(cliente):
+    """Numa noite de tres times, o terceiro sentou: nao entra nesta tela."""
+    c, Fabrica = cliente
+    c.post("/lancar", data=_noite(
+        times=[_time(1, 1), _time(2, 8), _time(3, 15)],
+        jogos=[{"cor_a": 1, "cor_b": 2, "vencedor": 1}],
+    ))
+    with Fabrica() as s:
+        jogo = s.query(Partida).one()
+        times = stats.times_da_partida(jogo)
+    cores = {t.cor.id for t in times}
+    assert cores == {1, 2}  # o time 3 nao aparece
+    assert len(times) == 2
+
+
+def test_o_retrospecto_da_tela_do_jogo_e_daquele_jogo(cliente):
+    """E nao o da noite, senao o numero contradiria o placar acima dele."""
+    c, Fabrica = cliente
+    c.post("/lancar", data=_noite(jogos=[
+        {"cor_a": 1, "cor_b": 2, "vencedor": 1},
+        {"cor_a": 1, "cor_b": 2, "vencedor": 1},
+        {"cor_a": 1, "cor_b": 2, "vencedor": 2},
+    ]))
+    with Fabrica() as s:
+        # o time 1 venceu 2 e perdeu 1 na noite; neste jogo, so perdeu
+        terceiro = s.query(Partida).filter_by(ordem=3).one()
+        preto = next(t for t in stats.times_da_partida(terceiro) if t.cor.id == 1)
+    assert (preto.vitorias, preto.empates, preto.derrotas) == (0, 0, 1)
+
+
+def test_a_tela_do_jogo_traz_a_escalacao_dos_dois(cliente):
+    c, Fabrica = cliente
+    c.post("/lancar", data=_noite(times=[_time(1, 1, reservas=2), _time(2, 11)]))
+    with Fabrica() as s:
+        times = stats.times_da_partida(s.query(Partida).one())
+    assert [len(t.titulares) for t in times] == [7, 7]
+    assert [len(t.reservas) for t in times] == [2, 0]
+
+
+def test_jogo_inexistente_volta_para_a_lista(cliente):
+    c, _ = cliente
+    assert c.get("/partida/999").headers["location"] == "/peladas"

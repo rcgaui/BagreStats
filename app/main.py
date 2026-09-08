@@ -303,6 +303,22 @@ def ver_pelada(pelada_id: int, request: Request, sessao: Session = Depends(get_s
     )
 
 
+@app.get("/partida/{partida_id}")
+def ver_partida(partida_id: int, request: Request, sessao: Session = Depends(get_session)):
+    partida = sessao.get(Partida, partida_id)
+    if partida is None:
+        return RedirectResponse("/peladas", 303)
+    return templates.TemplateResponse(
+        "partida.html",
+        {
+            "request": request,
+            "pagina": "peladas",
+            "partida": partida,
+            "times": stats.times_da_partida(partida),
+        },
+    )
+
+
 @app.get("/jogador/{jogador_id}")
 def ver_jogador(jogador_id: int, request: Request, sessao: Session = Depends(get_session)):
     perfil = stats.perfil(sessao, jogador_id)

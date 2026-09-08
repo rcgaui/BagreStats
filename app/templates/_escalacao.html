@@ -1,0 +1,54 @@
+{# A escalação de um time num cartão. Espera `t` no contexto (um TimeDaNoite).
+   Usado pela tela da noite e pela de um jogo, para as duas não divergirem. #}
+<div class="card">
+  <h2>
+    <span class="bola" style="background:{{ t.cor.codigo }}"></span>{{ t.cor.nome }}
+    <span class="retro">{{ t.vitorias }}V {{ t.empates }}E {{ t.derrotas }}D</span>
+  </h2>
+  <div class="campo-lido">
+    <div class="campo">
+      {% include "_campo.html" %}
+      {% set coord = {'GOL':(50,86),'ZAG':(50,71),'LAT_E':(15,57),'LAT_D':(85,57),
+                      'MEI_E':(29,37),'MEI_D':(71,37),'ATA':(50,17)} %}
+      {% for p in t.titulares %}
+      {% if p.posicao in coord %}
+      <div class="vaga ocupada" style="left:{{ coord[p.posicao][0] }}%;top:{{ coord[p.posicao][1] }}%">
+        <span class="bolha">{{ p.jogador.apelido|iniciais }}</span>
+        <span class="rotulo">{{ p.jogador.apelido }}</span>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    {# Pelada antiga foi registrada sem posição: o campo fica vazio e a lista
+       abaixo é a única forma honesta de mostrar quem jogou. #}
+    {% set sem_posicao = t.titulares|rejectattr('posicao')|list %}
+    {% if sem_posicao %}
+    <div class="sem-posicao">
+      <div class="rotulo-secao">Em campo</div>
+      <div class="lista-nomes">
+        {% for p in sem_posicao %}
+        <a href="/jogador/{{ p.jogador.id }}" class="chip">
+          <span class="av" style="background:{{ p.jogador.apelido|cor_do_apelido }}">{{ p.jogador.apelido|iniciais }}</span>
+          {{ p.jogador.apelido }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if t.reservas %}
+    <div class="sem-posicao">
+      <div class="rotulo-secao">Reservas</div>
+      <div class="lista-nomes">
+        {% for p in t.reservas %}
+        <a href="/jogador/{{ p.jogador.id }}" class="chip">
+          <span class="av" style="background:{{ p.jogador.apelido|cor_do_apelido }}">{{ p.jogador.apelido|iniciais }}</span>
+          {{ p.jogador.apelido }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
