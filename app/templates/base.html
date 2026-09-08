@@ -17,17 +17,26 @@
   }
 
   :root{
-    --bg:#0A0C10; --card:#13171D; --sobe:#191F27; --linha:#232932;
-    --txt:#EDF1F6; --fraco:#7B8695;
-    --acento:#C9F24D; --acento-txt:#0A0C10; --acento-fundo:#C9F24D1f;
-    --verde:#3FD48A; --amarelo:#F5C64B; --vermelho:#F0736B;
-    --ouro:#F0C24B; --prata:#C4CCD6; --bronze:#D08A54;
+    /* Tema claro. O fundo e a cor exata pedida; o resto foi derivado dela e
+       conferido contra os 4.5:1 de texto do craft-floor. */
+    --bg:#F0EEE7; --card:#FFFFFF; --sobe:#F4F1E9; --linha:#DFD9CC;
+    --linha-forte:#C7BFAE;
+    --txt:#191714; --fraco:#6E675C; --apagado:#8F8676;
+    /* Lima so preenche: como TEXTO em fundo claro da 1.3:1. Onde precisa de
+       acento legivel (linha, link, foco) entra a versao escura. */
+    --acento:#C9F24D; --acento-txt:#191714; --acento-fundo:#C9F24D66;
+    --acento-forte:#3F6B0A;
+    --verde:#15703A; --amarelo:#7A5C00; --vermelho:#B3261E;
+    --ouro:#7D5F00; --prata:#6E6E76; --bronze:#8A5A2B;
+    --entrada:#FFFFFF;
+    --campo:#2E7D46;
     --raio:12px;
-    /* Anel de toda amostra de cor: sem ele o colete preto some no fundo. */
-    --anel-cor:inset 0 0 0 1px #ffffff59;
+    /* Anel de toda amostra de cor: sem ele o colete BRANCO some no cartao. */
+    --anel-cor:inset 0 0 0 1px #00000033;
+    --sombra-menu:0 14px 34px -10px #19171426,0 3px 10px -3px #19171414;
     --fonte:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   }
-  html{color-scheme:dark}
+  html{color-scheme:light}
   *{box-sizing:border-box}
   /* Qualquer regra de autor que defina display vence o atributo [hidden] do
      navegador, e o elemento aparece mesmo escondido no HTML. Isso ja mordeu
@@ -39,11 +48,11 @@
        font-variant-numeric:tabular-nums}
 
   ::selection{background:var(--acento);color:var(--acento-txt)}
-  input,select,textarea{caret-color:var(--acento)}
-  :focus-visible{outline:2px solid var(--acento);outline-offset:2px;border-radius:6px}
+  input,select,textarea{caret-color:var(--acento-forte)}
+  :focus-visible{outline:2px solid var(--acento-forte);outline-offset:2px;border-radius:6px}
 
   /* ---------- cabecalho ---------- */
-  header{background:#0D1015;border-bottom:1px solid var(--linha);padding:0 20px;
+  header{background:var(--card);border-bottom:1px solid var(--linha);padding:0 20px;
          position:sticky;top:0;z-index:10}
   nav{max-width:1000px;margin:0 auto;display:flex;gap:2px;align-items:center;
       overflow-x:auto;scrollbar-width:none}
@@ -51,13 +60,13 @@
   nav a,nav .marca{white-space:nowrap;flex:none}
   .marca{font-weight:800;font-stretch:118%;font-size:19px;letter-spacing:-.02em;
          margin-right:26px;padding:16px 0}
-  .marca span{color:var(--acento)}
+  .marca span{color:var(--acento-forte)}
   nav a{color:var(--fraco);text-decoration:none;padding:18px 14px;font-size:14px;
         font-weight:500;position:relative;transition:color .15s}
   nav a:hover{color:var(--txt)}
   nav a.ativo{color:var(--txt)}
   nav a.ativo::after{content:"";position:absolute;left:14px;right:14px;bottom:0;
-                     height:2px;background:var(--acento);border-radius:2px 2px 0 0}
+                     height:2px;background:var(--acento-forte);border-radius:2px 2px 0 0}
 
   main{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
 
@@ -97,16 +106,16 @@
   tbody tr{transition:background .12s}
   tbody tr:hover{background:var(--sobe)}
   td a{color:var(--txt);text-decoration:none;font-weight:500}
-  td a:hover{color:var(--acento)}
+  td a:hover{color:var(--acento-forte)}
   .pos{color:var(--fraco);width:34px;font-weight:600}
   .pts{font-weight:700;font-size:15px}
   .pos.m1{color:var(--ouro)}.pos.m2{color:var(--prata)}.pos.m3{color:var(--bronze)}
-  tr.top td{background:linear-gradient(90deg,#1a2016 0%,transparent 60%)}
-  tr.top:hover td{background:linear-gradient(90deg,#202818 0%,var(--sobe) 60%)}
+  tr.top td{background:linear-gradient(90deg,#C9F24D33 0%,transparent 55%)}
+  tr.top:hover td{background:linear-gradient(90deg,#C9F24D4d 0%,var(--sobe) 55%)}
 
   .barra{display:inline-block;width:56px;height:6px;background:var(--linha);
          border-radius:99px;overflow:hidden;vertical-align:middle;margin-right:10px}
-  .barra i{display:block;height:100%;background:var(--acento);border-radius:99px}
+  .barra i{display:block;height:100%;background:var(--acento-forte);border-radius:99px}
   .bola{display:inline-block;width:12px;height:12px;border-radius:50%;
         vertical-align:-1px;margin-right:8px;box-shadow:var(--anel-cor)}
   .vazio{padding:34px 18px;color:var(--fraco);text-align:center;font-size:14px}
@@ -116,9 +125,9 @@
   label{display:block;font-size:10px;color:var(--fraco);margin:0 0 8px;
         text-transform:uppercase;letter-spacing:.09em;font-weight:600}
   input,select,button,textarea{font:inherit;font-family:var(--fonte);border-radius:9px;
-    border:1px solid var(--linha);background:#0E1116;color:var(--txt);padding:11px 13px;
+    border:1px solid var(--linha);background:var(--entrada);color:var(--txt);padding:11px 13px;
     transition:border-color .15s,background .15s,color .15s}
-  input:hover,select:hover{border-color:#313945}
+  input:hover,select:hover{border-color:var(--linha-forte)}
   /* O <select> nativo e feio e nao aceita estilo por dentro. Tiramos a
      aparencia padrao e desenhamos a seta como fundo. */
   select{appearance:none;padding-right:36px;cursor:pointer;
@@ -135,10 +144,10 @@
                   cursor:not-allowed;filter:none;transform:none}
   button.fraco{background:transparent;border-color:var(--linha);color:var(--txt);
                font-weight:600}
-  button.fraco:hover{border-color:var(--acento);color:var(--acento);filter:none}
+  button.fraco:hover{border-color:var(--acento-forte);color:var(--acento-forte);filter:none}
 
   .linha-form{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
-  .erro{background:#2a1518;border:1px solid #6b2b31;color:#ffb3b8;padding:12px 15px;
+  .erro{background:#FBE9E7;border:1px solid #EBBDB8;color:#8C1D18;padding:12px 15px;
         border-radius:9px;margin-bottom:18px;font-size:14px}
 
   /* ---------- seletor proprio (substitui <select> e input[type=date]) ----------
@@ -146,20 +155,20 @@
      nao aceita estilo. Por isso o controle inteiro e refeito aqui. */
   .seletor{position:relative}
   .seletor .gatilho{display:flex;align-items:center;gap:10px;width:100%;
-    background:#0E1116;border:1px solid var(--linha);border-radius:9px;
+    background:var(--entrada);border:1px solid var(--linha);border-radius:9px;
     padding:11px 13px;color:var(--txt);font-weight:500;cursor:pointer;
     letter-spacing:0;text-align:left}
-  .seletor .gatilho:hover{border-color:#313945;filter:none;transform:none}
+  .seletor .gatilho:hover{border-color:var(--linha-forte);filter:none;transform:none}
   .seletor .gatilho:active{transform:none}
-  .seletor.aberto .gatilho{border-color:var(--acento)}
+  .seletor.aberto .gatilho{border-color:var(--acento-forte)}
   .seletor .gatilho .valor{flex:1}
   .seletor .gatilho .seta{color:var(--fraco);flex:none;transition:transform .18s}
   .seletor.aberto .gatilho .seta{transform:rotate(180deg)}
   .seletor .gatilho .icone{color:var(--fraco);flex:none}
 
   .seletor .menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;
-    background:var(--sobe);border:1px solid #2e3641;border-radius:11px;padding:5px;
-    box-shadow:0 14px 34px -8px #000000cc,0 3px 10px -3px #0009;
+    background:var(--sobe);border:1px solid var(--linha);border-radius:11px;padding:5px;
+    box-shadow:var(--sombra-menu);
     max-height:270px;overflow-y:auto}
   /* Restrito ao [role=listbox]: sem isso a regra vaza para os botoes do
      calendario, e por ter seletor de elemento ela VENCE as regras .cal-*
@@ -167,14 +176,14 @@
   .seletor .menu[role="listbox"] button{display:flex;align-items:center;gap:10px;
     width:100%;background:none;border:none;border-radius:7px;padding:9px 10px;
     color:var(--txt);font-weight:500;cursor:pointer;text-align:left;letter-spacing:0}
-  .seletor .menu[role="listbox"] button:hover:not(:disabled){background:#232b36;
+  .seletor .menu[role="listbox"] button:hover:not(:disabled){background:var(--sobe);
     filter:none;transform:none}
   .seletor .menu[role="listbox"] button:active{transform:none}
   .seletor .menu[role="listbox"] button .nome{flex:1}
-  .seletor .menu[role="listbox"] button .check{color:var(--acento);opacity:0;flex:none}
+  .seletor .menu[role="listbox"] button .check{color:var(--acento-forte);opacity:0;flex:none}
   .seletor .menu[role="listbox"] button.marcado .check{opacity:1}
   .seletor .menu[role="listbox"] button:disabled{background:none;border:none;
-    color:#4d5563;cursor:not-allowed;text-decoration:line-through}
+    color:var(--apagado);cursor:not-allowed;text-decoration:line-through}
   .seletor .menu[role="listbox"] button:disabled .bola{opacity:.35}
 
   /* ---------- calendario ----------
@@ -188,7 +197,7 @@
   .cal-nav{background:none;border:1px solid var(--linha);color:var(--fraco);
            cursor:pointer;width:26px;height:26px;padding:0;border-radius:7px;
            display:grid;place-items:center;flex:none}
-  .cal-nav:hover{background:#232b36;color:var(--txt);border-color:#313945;
+  .cal-nav:hover{background:var(--sobe);color:var(--txt);border-color:var(--linha-forte);
                  filter:none;transform:none}
   .cal-nav:active{transform:none}
   .cal-nav svg{width:7px;height:10px}
@@ -198,10 +207,10 @@
   .cal-dia{background:none;border:none;color:var(--txt);border-radius:8px;padding:0;
            height:33px;font-size:13px;font-weight:500;cursor:pointer;letter-spacing:0;
            transition:background .12s,color .12s}
-  .cal-dia:hover{background:#2b3440;filter:none;transform:none}
+  .cal-dia:hover{background:var(--sobe);filter:none;transform:none}
   .cal-dia:active{transform:none}
   /* Hoje: so um contorno discreto - quem manda no destaque e a data escolhida. */
-  .cal-dia.hoje{box-shadow:inset 0 0 0 1px #39414f}
+  .cal-dia.hoje{box-shadow:inset 0 0 0 1px var(--linha-forte)}
   /* A data escolhida tem que ser inconfundivel, inclusive depois de reabrir o
      calendario num outro mes e voltar. */
   .cal-dia.escolhido{background:var(--acento);color:var(--acento-txt);font-weight:800;
@@ -209,8 +218,8 @@
   .cal-dia.escolhido:hover{background:var(--acento);color:var(--acento-txt)}
   /* Data que ainda nao chegou: apagada, mas continua clicavel para poder
      explicar o motivo em vez de so nao responder. */
-  .cal-dia.futuro{color:#4a5261;cursor:not-allowed}
-  .cal-dia.futuro:hover{background:#1d232c}
+  .cal-dia.futuro{color:var(--apagado);cursor:not-allowed}
+  .cal-dia.futuro:hover{background:var(--sobe)}
   .cal-nav:disabled{opacity:.3;cursor:not-allowed;background:none}
   .cal-recado{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--linha);
               font-size:12px;line-height:1.4;color:var(--amarelo)}
@@ -219,7 +228,7 @@
   .linha-salvar .aviso{margin:0}
 
   /* ---------- controle segmentado (substitui o select de resultado) ---------- */
-  .segmentado{display:flex;background:#0E1116;border:1px solid var(--linha);
+  .segmentado{display:flex;background:var(--entrada);border:1px solid var(--linha);
               border-radius:10px;padding:4px;gap:4px}
   .segmentado input{position:absolute;opacity:0;pointer-events:none}
   .segmentado label{flex:1;margin:0;padding:10px 12px;text-align:center;cursor:pointer;
@@ -250,24 +259,24 @@
   .V{color:var(--verde)}.E{color:var(--amarelo)}.D{color:var(--vermelho)}
   .selo{display:inline-block;width:21px;height:21px;line-height:21px;text-align:center;
         border-radius:5px;font-size:11px;font-weight:700}
-  .selo.V{background:#153a29;color:#5fe0a0}
-  .selo.E{background:#3d3316;color:#f0cf6a}
-  .selo.D{background:#3d1e1e;color:#f59a94}
+  .selo.V{background:#DCF0E3;color:var(--verde)}
+  .selo.E{background:#F3EBD4;color:var(--amarelo)}
+  .selo.D{background:#FBE3E1;color:var(--vermelho)}
 
   /* ---------- avatar ---------- */
   .quem{display:flex;align-items:center;gap:11px}
   .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;
-      font-size:11px;font-weight:800;color:#0A0C10;letter-spacing:-.02em}
+      font-size:11px;font-weight:800;color:var(--txt);letter-spacing:-.02em}
   .av.g{width:62px;height:62px;font-size:22px}
 
   /* ---------- graficos ---------- */
   .gr{padding:20px}
   .gr svg{display:block;width:100%;height:auto;overflow:visible}
   .gr .grade{stroke:var(--linha);stroke-width:1}
-  .gr .curva{fill:none;stroke:var(--acento);stroke-width:2.5;
+  .gr .curva{fill:none;stroke:var(--acento-forte);stroke-width:2.5;
              stroke-linejoin:round;stroke-linecap:round}
-  .gr .sombra{fill:var(--acento);opacity:.13}
-  .gr .no{fill:var(--card);stroke:var(--acento);stroke-width:2.5}
+  .gr .sombra{fill:var(--acento-forte);opacity:.14}
+  .gr .no{fill:var(--card);stroke:var(--acento-forte);stroke-width:2.5}
   .gr .marca-y,.gr .marca-x{fill:var(--fraco);font-size:10px;font-family:var(--fonte)}
   .gr .marca-x{text-anchor:middle}
 
@@ -278,8 +287,8 @@
   .pilha .d{background:var(--vermelho)}
   /* Colete preto sobre card escuro e quase a mesma cor: a barra lia como linha
      vazia. Emoldurar num trilho claro faz cada segmento virar bloco. */
-  .pilha.coletes{height:24px;border-radius:8px;background:#4a5364;padding:2px;gap:2px}
-  .pilha.coletes i{border-radius:5px;box-shadow:inset 0 0 0 1px #ffffff2e}
+  .pilha.coletes{height:24px;border-radius:8px;background:var(--linha-forte);padding:2px;gap:2px}
+  .pilha.coletes i{border-radius:5px;box-shadow:inset 0 0 0 1px #00000026}
   .legenda{display:flex;gap:18px;margin-top:13px;font-size:12px;color:var(--fraco);
            flex-wrap:wrap}
   .legenda b{color:var(--txt);font-weight:700}
@@ -307,7 +316,7 @@
   .lado-placar .bola{width:15px;height:15px;margin:0}
   .placar .versus{color:var(--fraco);font-size:11px;text-transform:uppercase;
                   letter-spacing:.09em}
-  .fita{background:var(--acento-fundo);color:var(--verde);font-size:10px;
+  .fita{background:#DCF0E3;color:var(--verde);font-size:10px;
         font-weight:700;text-transform:uppercase;letter-spacing:.08em;
         padding:4px 9px;border-radius:99px}
 
@@ -319,7 +328,7 @@
   .botao-link{background:transparent;border:1px solid var(--linha);color:var(--txt);
               text-decoration:none;font-size:13px;font-weight:600;padding:9px 15px;
               border-radius:9px}
-  .botao-link:hover{border-color:var(--acento);color:var(--acento)}
+  .botao-link:hover{border-color:var(--acento-forte);color:var(--acento-forte)}
 
   /* A data e um rotulo de secao, nao uma barra dentro do cartao: tira uma
      borda e um fundo da tela sem tirar informacao nenhuma. */
@@ -327,7 +336,7 @@
   .cabeca-noite{display:flex;align-items:baseline;gap:12px;padding:0 2px 10px;
                 text-decoration:none;color:var(--txt);flex-wrap:wrap}
   .cabeca-noite b{font-size:14px;font-weight:700;letter-spacing:-.01em}
-  .cabeca-noite:hover b{color:var(--acento)}
+  .cabeca-noite:hover b{color:var(--acento-forte)}
   .cabeca-noite .conta{color:var(--fraco);font-size:12.5px}
 
   /* Um confronto ocupa duas linhas: um time sobre o outro, como num placar. */
@@ -410,10 +419,10 @@
   }
 
   .resumo-times{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:18px}
-  .cartao-time{border:1px solid var(--linha);border-radius:var(--raio);background:var(--card);
+  .cartao-time{border:1px solid var(--linha);border-radius:var(--raio);background:var(--bg);
                padding:18px;display:flex;flex-direction:column;gap:14px;
                transition:border-color .15s}
-  .cartao-time:hover{border-color:#313945}
+  .cartao-time:hover{border-color:var(--linha-forte)}
   .cartao-time .titulo{display:flex;align-items:center;justify-content:space-between}
   .cartao-time .titulo b{color:var(--txt);display:flex;align-items:center;gap:9px;
                          font-size:15px;font-weight:700}
@@ -441,8 +450,8 @@
   /* 3/4 com viewBox 75x100 faz as escalas x e y baterem, entao circulo desenhado
      no SVG sai redondo em vez de oval. */
   .campo{position:relative;width:100%;max-width:330px;margin:0 auto;aspect-ratio:3/4;
-         background:#25693a;border-radius:10px;overflow:hidden;
-         box-shadow:inset 0 0 70px #00000059}
+         background:var(--campo);border-radius:10px;overflow:hidden;
+         box-shadow:inset 0 0 50px #0000003d}
   /* Faixas de grama alternadas, bem discretas. */
   .campo::before{content:"";position:absolute;inset:0;z-index:0;
                  background:repeating-linear-gradient(0deg,#ffffff0a 0 10%,transparent 10% 20%)}
@@ -480,10 +489,10 @@
   .lista-reservas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
   .lista-reservas .vaga{position:static;transform:none;z-index:auto}
   .lista-reservas .vaga:active{transform:none}
-  .lista-reservas .vaga .bolha{background:#0E1116;border-color:var(--linha);
+  .lista-reservas .vaga .bolha{background:var(--entrada);border-color:var(--linha);
                                border-style:solid;color:var(--fraco);
                                width:42px;height:42px}
-  .lista-reservas .vaga:hover .bolha{border-color:var(--acento);color:var(--acento)}
+  .lista-reservas .vaga:hover .bolha{border-color:var(--acento-forte);color:var(--acento-forte)}
   .lista-reservas .vaga.ocupada .bolha{background:var(--acento);border-color:var(--acento);
                                         color:var(--acento-txt)}
   .lista-reservas .vaga .rotulo{color:var(--txt);text-shadow:none}
@@ -493,7 +502,7 @@
   .add-reserva:hover{border-style:dashed}
 
   /* ---------- popup ---------- */
-  .popup-fundo{position:fixed;inset:0;background:#000000b8;display:flex;
+  .popup-fundo{position:fixed;inset:0;background:#1917144d;display:flex;
               align-items:flex-end;justify-content:center;z-index:100;
               backdrop-filter:blur(3px)}
   @media(min-width:560px){.popup-fundo{align-items:center}}
@@ -522,7 +531,7 @@
   .popup-lista .vazio{padding:24px 18px;color:var(--fraco);font-size:13px}
   /* Cadastrar e uma acao, nao mais um nome na lista: precisa se distinguir
      das opcoes sem virar o item mais chamativo do popup. */
-  .popup-lista button.cadastrar{color:var(--acento);font-weight:600}
+  .popup-lista button.cadastrar{color:var(--acento-forte);font-weight:600}
   .popup-lista button.cadastrar .mais{width:22px;height:22px;border-radius:50%;
     background:var(--acento-fundo);display:grid;place-items:center;flex:none;
     font-size:14px;line-height:1}
