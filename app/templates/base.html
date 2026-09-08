@@ -16,6 +16,15 @@
     font-display:swap;
   }
 
+  /* JetBrains Mono variavel, subconjunto latino. Mesma escolha da Archivo:
+     hospedada aqui, sem CDN. */
+  @font-face{
+    font-family:"JetBrains Mono";
+    src:url("/static/fontes/jetbrains-mono.woff2") format("woff2-variations");
+    font-weight:100 800;
+    font-display:swap;
+  }
+
   :root{
     /* Tema claro. O fundo e a cor exata pedida; o resto foi derivado dela e
        conferido contra os 4.5:1 de texto do craft-floor. */
@@ -35,6 +44,9 @@
     --anel-cor:inset 0 0 0 1px #00000033;
     --sombra-menu:0 14px 34px -10px #19171426,0 3px 10px -3px #19171414;
     --fonte:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    /* Mono para rotulo e para numero: os dois sao dado, nao prosa. Numa tabela
+       de estatistica ela ainda alinha as colunas de digito por construcao. */
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   html{color-scheme:light}
   *{box-sizing:border-box}
@@ -92,22 +104,25 @@
      do canto arredondado. */
   .card table tr:last-child td:first-child{border-bottom-left-radius:var(--raio)}
   .card table tr:last-child td:last-child{border-bottom-right-radius:var(--raio)}
-  .card h2{font-size:11px;margin:0;padding:15px 18px;border-bottom:1px solid var(--linha);
-           color:var(--fraco);text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+  .card h2{font-family:var(--mono);font-size:11px;margin:0;padding:15px 18px;
+           border-bottom:1px solid var(--linha);color:var(--fraco);
+           text-transform:uppercase;letter-spacing:.11em;font-weight:500}
 
   /* ---------- tabela ---------- */
   table{width:100%;border-collapse:collapse;font-size:14px}
-  th{text-align:right;color:var(--fraco);font-size:10px;text-transform:uppercase;
-     letter-spacing:.09em;padding:12px 10px;border-bottom:1px solid var(--linha);
-     font-weight:600}
+  th{text-align:right;font-family:var(--mono);color:var(--fraco);font-size:10px;
+     text-transform:uppercase;letter-spacing:.11em;padding:12px 10px;
+     border-bottom:1px solid var(--linha);font-weight:500}
   th:nth-child(-n+2),td:nth-child(-n+2){text-align:left}
   td{padding:12px 10px;border-bottom:1px solid var(--linha);text-align:right}
+  /* So as colunas de numero: o nome do jogador continua na Archivo. */
+  td:not(:nth-child(-n+2)){font-family:var(--mono);font-size:13px}
   tr:last-child td{border-bottom:none}
   tbody tr{transition:background .12s}
   tbody tr:hover{background:var(--sobe)}
   td a{color:var(--txt);text-decoration:none;font-weight:500}
   td a:hover{color:var(--acento-forte)}
-  .pos{color:var(--fraco);width:34px;font-weight:600}
+  .pos{font-family:var(--mono);color:var(--fraco);width:34px;font-weight:500}
   .pts{font-weight:700;font-size:15px}
   .pos.m1{color:var(--ouro)}.pos.m2{color:var(--prata)}.pos.m3{color:var(--bronze)}
   tr.top td{background:linear-gradient(90deg,#C9F24D33 0%,transparent 55%)}
@@ -122,8 +137,8 @@
 
   /* ---------- formulario ---------- */
   form{padding:18px}
-  label{display:block;font-size:10px;color:var(--fraco);margin:0 0 8px;
-        text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+  label{display:block;font-family:var(--mono);font-size:10px;color:var(--fraco);
+        margin:0 0 8px;text-transform:uppercase;letter-spacing:.11em;font-weight:500}
   input,select,button,textarea{font:inherit;font-family:var(--fonte);border-radius:9px;
     border:1px solid var(--linha);background:var(--entrada);color:var(--txt);padding:11px 13px;
     transition:border-color .15s,background .15s,color .15s}
@@ -252,13 +267,13 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   .destaque{display:flex;gap:30px;padding:20px;flex-wrap:wrap}
   .destaque div{flex:1;min-width:92px}
-  .destaque b{display:block;font-size:32px;font-weight:800;font-stretch:105%;
+  .destaque b{display:block;font-family:var(--mono);font-size:30px;font-weight:700;
               letter-spacing:-.03em;line-height:1.05}
-  .destaque small{color:var(--fraco);font-size:10px;text-transform:uppercase;
-                  letter-spacing:.09em;font-weight:600}
+  .destaque small{font-family:var(--mono);color:var(--fraco);font-size:10px;
+                  text-transform:uppercase;letter-spacing:.11em;font-weight:500}
   .V{color:var(--verde)}.E{color:var(--amarelo)}.D{color:var(--vermelho)}
-  .selo{display:inline-block;width:21px;height:21px;line-height:21px;text-align:center;
-        border-radius:5px;font-size:11px;font-weight:700}
+  .selo{display:inline-block;font-family:var(--mono);width:21px;height:21px;
+        line-height:21px;text-align:center;border-radius:5px;font-size:11px;font-weight:700}
   .selo.V{background:#DCF0E3;color:var(--verde)}
   .selo.E{background:#F3EBD4;color:var(--amarelo)}
   .selo.D{background:#FBE3E1;color:var(--vermelho)}
@@ -314,10 +329,10 @@
   .lado-placar b{font-weight:700;letter-spacing:-.02em}
   .lado-placar.venceu{color:var(--txt)}
   .lado-placar .bola{width:15px;height:15px;margin:0}
-  .placar .versus{color:var(--fraco);font-size:11px;text-transform:uppercase;
-                  letter-spacing:.09em}
-  .fita{background:#DCF0E3;color:var(--verde);font-size:10px;
-        font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  .placar .versus{font-family:var(--mono);color:var(--fraco);font-size:11px;
+                  text-transform:uppercase;letter-spacing:.11em}
+  .fita{background:#DCF0E3;color:var(--verde);font-family:var(--mono);font-size:10px;
+        font-weight:600;text-transform:uppercase;letter-spacing:.1em;
         padding:4px 9px;border-radius:99px}
 
   /* ---------- partidas: lista de noites ---------- */
@@ -337,7 +352,8 @@
                 text-decoration:none;color:var(--txt);flex-wrap:wrap}
   .cabeca-noite b{font-size:14px;font-weight:700;letter-spacing:-.01em}
   .cabeca-noite:hover b{color:var(--acento-forte)}
-  .cabeca-noite .conta{color:var(--fraco);font-size:12.5px}
+  .cabeca-noite .conta{font-family:var(--mono);color:var(--fraco);font-size:11.5px;
+                        letter-spacing:.02em}
 
   /* Um confronto ocupa duas linhas: um time sobre o outro, como num placar. */
   .confronto{display:flex;flex-direction:column;gap:6px;padding:13px 18px;
@@ -354,8 +370,8 @@
   .confronto .lado.r-d .nome{color:var(--fraco)}
   /* .selo-jogo, e nao .marca: essa ja e a classe do logo no cabecalho, e o
      padding dela inflava a altura deste selo. */
-  .confronto .selo-jogo{flex:none;width:16px;text-align:center;font-size:12px;
-                        font-weight:700;color:var(--fraco)}
+  .confronto .selo-jogo{font-family:var(--mono);flex:none;width:16px;text-align:center;
+                        font-size:12px;font-weight:700;color:var(--fraco)}
   .confronto .lado.r-v .selo-jogo{color:var(--verde);font-weight:800}
   .confronto .lado.r-d .selo-jogo{color:var(--vermelho)}
 
@@ -368,14 +384,14 @@
   .jogo-lido .lado:last-of-type{justify-content:flex-end}
   /* Quem venceu fica cheio; quem perdeu, apagado. E a leitura mais rapida do placar. */
   .jogo-lido .lado.venceu{color:var(--txt);font-weight:700}
-  .jogo-lido .resultado{color:var(--fraco);font-size:11px;text-transform:uppercase;
-                        letter-spacing:.09em;flex:none}
+  .jogo-lido .resultado{font-family:var(--mono);color:var(--fraco);font-size:11px;
+                        text-transform:uppercase;letter-spacing:.11em;flex:none}
 
   .escalacoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
               gap:18px;align-items:start}
   .escalacoes .card h2{display:flex;align-items:center;gap:0}
-  .escalacoes .card h2 .retro{margin-left:auto;color:var(--txt);letter-spacing:0;
-                              text-transform:none;font-size:12px}
+  .escalacoes .card h2 .retro{margin-left:auto;color:var(--txt);font-size:12px;
+                              letter-spacing:.04em}
   .campo-lido{padding:18px}
   .campo-lido .campo{max-width:100%}
   /* So leitura: nada aqui responde a clique, entao nao pode parecer clicavel. */
@@ -484,8 +500,9 @@
   .vaga .rotulo{font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 4px #000e;
                 white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
   .reservas{margin-top:22px}
-  .reservas .rotulo-secao{font-size:10px;color:var(--fraco);text-transform:uppercase;
-                          letter-spacing:.09em;margin-bottom:12px;font-weight:600}
+  .reservas .rotulo-secao,.sem-posicao .rotulo-secao{font-family:var(--mono);
+     font-size:10px;color:var(--fraco);text-transform:uppercase;letter-spacing:.11em;
+     margin-bottom:12px;font-weight:500}
   .lista-reservas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
   .lista-reservas .vaga{position:static;transform:none;z-index:auto}
   .lista-reservas .vaga:active{transform:none}
@@ -514,8 +531,8 @@
   .popup-caixa .cabeca{padding:16px 18px;border-bottom:1px solid var(--linha)}
   .popup-caixa .cabeca-linha{display:flex;justify-content:space-between;align-items:center;
                               margin-bottom:12px}
-  .popup-caixa h3{margin:0;font-size:11px;color:var(--fraco);text-transform:uppercase;
-                  letter-spacing:.09em;font-weight:600}
+  .popup-caixa h3{margin:0;font-family:var(--mono);font-size:11px;color:var(--fraco);
+                  text-transform:uppercase;letter-spacing:.11em;font-weight:500}
   .popup-caixa .fechar{background:none;border:none;color:var(--fraco);font-size:22px;
                        cursor:pointer;padding:0;line-height:1}
   .popup-caixa .fechar:hover{color:var(--txt);filter:none;transform:none}
